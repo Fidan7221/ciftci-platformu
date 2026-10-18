@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 from app.forms.account_forms import AccountForm
 from app.models import Listing, ListingStatus, Order, OrderStatus, Product, RoleName, User
 from app.repositories.order_repository import StatsRepository
-from app.services import auth_service
+from app.services import auth_service, prediction_service
 from app.services.auth_service import AuthError
 from app.utils.decorators import role_required
 from app.utils.forms import show_service_error
@@ -33,7 +33,8 @@ def dashboard():
 @role_required(RoleName.CUSTOMER)
 def customer_dashboard():
     return render_template("customer/dashboard.html",
-                           recent_orders=StatsRepository.recent_orders_for_customer(current_user.id))
+                           recent_orders=StatsRepository.recent_orders_for_customer(current_user.id),
+                           market_cards=prediction_service.market_overview(limit=3))  # Hafta 10
 
 
 @main_bp.route("/yonetici/panel")

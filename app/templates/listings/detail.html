@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import product_image %}
+{% from "_ai_macros.html" import insight_card %}
 {% block title %}{{ listing.title }}{% endblock %}
 
 {% block content %}
@@ -95,5 +96,13 @@
       {% endif %}
     </div>
   </div>
+
+  {% if insight %}
+    <!-- Hafta 10: bu ürün grubunun hal fiyatı trendi -->
+    {% set is_owner = current_user.is_authenticated and current_user.is_producer and current_user.producer_profile == producer %}
+    <div class="row mt-4"><div class="col-lg-8">
+      {{ insight_card(insight, mode=("producer" if is_owner else "consumer"), chart_id="ilan-grafik") }}
+    </div></div>
+  {% endif %}
 </div>
 {% endblock %}

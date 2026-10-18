@@ -23,6 +23,19 @@
           {{ render_field(form.product_id, id="product_id") }}
           <div id="remaining-hint" class="form-text mt-n2 mb-3"></div>
 
+          <!-- Hafta 10: yapay zekâ fiyat önerisi (seçilen ürüne göre JS ile doldurulur) -->
+          <div id="ai-suggestion" class="ai-suggestion p-3 mb-3 small" hidden>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <div class="fw-semibold"><i class="bi bi-stars text-farm"></i> Yapay zekâ fiyat önerisi:
+                  <span id="ai-price"></span></div>
+                <div class="text-muted">Önerilen aralık: <span id="ai-range"></span> · <span id="ai-confidence"></span></div>
+                <div id="ai-headline" class="mt-1"></div>
+              </div>
+              <button type="button" class="btn btn-sm btn-farm" id="ai-apply">Önerilen fiyatı kullan</button>
+            </div>
+          </div>
+
           {{ render_field(form.title, placeholder="Örn. Taze hasat salkım domates", help=form.title.description) }}
 
           <div class="row">
@@ -64,8 +77,28 @@
         },
       {% endfor %}
     };
+    const suggestions = {{ suggestions|tojson }};
     const select = document.getElementById("product_id");
     const hint = document.getElementById("remaining-hint");
+    const box = document.getElementById("ai-suggestion");
+    const priceInput = document.getElementById("price");
+    const money = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" });
+
+    function updateSuggestion() {
+      const s = suggestions[select.value];
+      box.hidden = !s;
+      if (!s) return;
+      document.getElementById("ai-price").textContent = money.format(s.price);
+      document.getElementById("ai-range").textContent = money.format(s.min) + " – " + money.format(s.max);
+      document.getElementById("ai-confidence").textContent = "güven %" + Math.round(s.confidence * 100);
+      document.getElementById("ai-headline").textContent = s.headline;
+    }
+    document.getElementById("ai-apply").addEventListener("click", function () {
+      const s = suggestions[select.value];
+      if (s) { priceInput.value = s.price.toFixed(2); priceInput.focus(); }
+    });
+    select.addEventListener("change", updateSuggestion);
+    updateSuggestion();
     function update() {
       const value = remaining[select.value];
       if (!value) { hint.textContent = ""; return; }

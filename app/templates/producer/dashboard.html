@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import product_image %}
+{% from "_ai_macros.html" import insight_card %}
 {% block title %}Üretici Paneli{% endblock %}
 
 {% block content %}
@@ -58,6 +59,23 @@
         <small class="fs-6 text-muted">({{ profile.review_count }} yorum)</small></div>
     </div></div></div>
   </div>
+
+  <!-- Hafta 10: piyasa trendi ve yapay zekâ önerileri -->
+  <h2 class="h5 fw-bold mt-4 mb-1"><i class="bi bi-stars text-farm"></i> Piyasa trendi ve yapay zekâ önerileri</h2>
+  <p class="small text-muted mb-3">Satıştaki ürünlerinizin hal fiyatı geçmişine göre {{ 7 }} günlük tahmin ve fiyat önerisi.</p>
+  {% if insights %}
+    <div class="row g-3">
+      {% for card in insights %}
+        <div class="col-lg-6">{{ insight_card(card.insight, mode="producer", chart_id="uretici-grafik-" ~ loop.index,
+                                              title=card.product.name ~ " (" ~ card.insight.category.name ~ ")") }}</div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-light border small">
+      <i class="bi bi-info-circle"></i> Ürünlerinizin kategorileri için henüz yeterli hal fiyatı verisi yok
+      (en az 14 gün gerekir). Yönetici <code>flask fetch-prices --days 60</code> ile geçmiş veriyi çekebilir.
+    </div>
+  {% endif %}
 
   <div class="card border-0 shadow-sm mt-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">

@@ -1,4 +1,4 @@
-# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 9)
+# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 10)
 
 **Kullanılan araç:** Claude (Anthropic), claude.ai sohbet arayüzü
 **Kullanım biçimi:** Her hafta için gereksinimler istem olarak verildi; yapay zekâ kod, test ve açıklama üretti.
@@ -6,7 +6,7 @@ Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırı
 
 > Not: Yapay zekânın çalıştığı ortamda paket deposuna erişim kapalıydı; bu yüzden üretilen kodu orada
 > çoğunlukla çalıştıramadı, sözdizimi ve statik analiz kontrolü yaptı. (Hafta 9'da harici API katmanının
-> 23 testi, eksik eklentiler taklit edilerek orada da çalıştırıldı.) Tüm "geçti" sonuçları benim
+> 23 testi, Hafta 10'da tahmin algoritmasının 20 testi orada da gerçekten çalıştırıldı.) Tüm "geçti" sonuçları benim
 > bilgisayarımdaki `pytest` çıktısıdır.
 >
 > `[ ]` ile işaretli alanları kendi deneyiminize göre doldurun. Hoca bu bölümde sizin ne
@@ -22,6 +22,7 @@ Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırı
 | 19.10.2026 | 7 | İlan, sepet, sipariş, transaction | Koşullu UPDATE ile stok düşürme, durum makinesi, sepetin üreticiye göre bölünmesi, 37 test | İki stok kuralını (aktif ilanlar ≤ ürün stoğu) kabul ettim. [ ] | Entegre edildi [test sayısını yazın] |
 | 19.10.2026 | 8 | Vize: entegrasyon, düzeltme, belge | Entegrasyon taraması, 6 düzeltme, demo verisi, 14 entegrasyon testi, rapor ve sözlü hazırlık | [ ] | [ ] / 95 test |
 | 19.10.2026 | 9 | Fiyat ve ödeme API entegrasyonu | Ortak HTTP istemcisi (timeout, retry, 429, hız sınırı), sahte/HTTP fiyat ve ödeme sağlayıcıları, idempotency, HMAC imzası, iade akışı, 56 test | [ ] | [ ] / 151 test |
+| 19.10.2026 | 10 | Fiyat tahmini ve trend analizi | Doğrusal regresyon modeli, geri test, güven skoru, öneri kuralları, tahmin kaydı, grafik kartları, model kartı, 32 test | [ ] Model seçimi (neden doğrusal regresyon) ve öneri kurallarındaki prim oranlarını kendim değerlendirdim mi? | [ ] / 183 test |
 
 ## Yapay zekânın hataları ve nasıl yakalandığı
 

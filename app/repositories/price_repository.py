@@ -52,3 +52,27 @@ class PriceRepository(BaseRepository):
     @staticmethod
     def count():
         return db.session.execute(db.select(func.count(MarketPrice.id))).scalar()
+
+    # --- Hafta 10: yapay zekâ modeli için zaman serileri ------------------------------------
+
+    @staticmethod
+    def daily_series_for_category(category_id, since):
+        """[(tarih, ortalama fiyat), ...] — aynı gün birden çok kaynak varsa ortalaması alınır."""
+        rows = db.session.execute(
+            db.select(MarketPrice.price_date, func.avg(MarketPrice.avg_price))
+            .where(MarketPrice.category_id == category_id, MarketPrice.price_date >= since)
+            .group_by(MarketPrice.price_date)
+            .order_by(MarketPrice.price_date)
+        ).all()
+        return [(day, float(price)) for day, price in rows]
+
+    @staticmethod
+    def categories_with_prices(since):
+        """Fiyat verisi olan kategori id'leri, kayıt sayısına göre çoktan aza."""
+        rows = db.session.execute(
+            db.select(MarketPrice.category_id, func.count(MarketPrice.id))
+            .where(MarketPrice.category_id.is_not(None), MarketPrice.price_date >= since)
+            .group_by(MarketPrice.category_id)
+            .order_by(func.count(MarketPrice.id).desc(), MarketPrice.category_id)
+        ).all()
+        return [category_id for category_id, _ in rows]

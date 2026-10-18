@@ -176,6 +176,15 @@ def register_cli_commands(app):
         print(f"{result['days']} gün işlendi: {result['inserted']} yeni, {result['updated']} güncellenen, "
               f"{result['invalid']} hatalı satır.")
 
+    @app.cli.command("predict-prices")
+    def predict_prices():
+        """Satıştaki tüm ürünler için 7 günlük yapay zekâ fiyat tahmini üretir (Hafta 10)."""
+        from app.services import prediction_service
+
+        result = prediction_service.generate_predictions()
+        print(f"{result['products']} ürün incelendi: {result['saved']} tahmin kaydedildi, "
+              f"{result['skipped']} ürün için yeterli fiyat verisi yok.")
+
     @app.cli.command("cancel-unpaid")
     @click.option("--hours", type=int, default=None, help="Varsayılan: UNPAID_ORDER_TIMEOUT_HOURS")
     def cancel_unpaid(hours):

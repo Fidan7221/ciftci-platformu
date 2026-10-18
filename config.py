@@ -26,7 +26,7 @@ class Config:
     """Tüm ortamların ortak ayarları."""
 
     APP_NAME = "Tarladan Sofraya"
-    APP_VERSION = "0.9.0"  # Git etiketiyle aynı tutulur: v0.9.0
+    APP_VERSION = "0.10.0"  # Git etiketiyle aynı tutulur: v0.10.0
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "gelistirme-icin-gecici-anahtar")
 
@@ -75,6 +75,13 @@ class Config:
 
     # Ödenmeyen siparişler bu süre sonra iptal edilir (flask cancel-unpaid), stok geri döner
     UNPAID_ORDER_TIMEOUT_HOURS = int(os.environ.get("UNPAID_ORDER_TIMEOUT_HOURS", "24"))
+
+    # --- Yapay zekâ: fiyat tahmini (Hafta 10) ----------------------------------------------
+    AI_FORECAST_HORIZON_DAYS = 7      # kaç gün sonrası tahmin edilir
+    AI_WINDOW_DAYS = 30               # model son kaç günün verisiyle eğitilir
+    AI_MIN_POINTS = 14                # bundan az günlük veri varsa tahmin yapılmaz
+    AI_STABLE_THRESHOLD_PCT = 2.0     # haftalık değişim ±%2 içindeyse "dengeli"
+    AI_MIN_CONFIDENCE = 0.40          # bunun altında "bekle/sat" önerisi verilmez
 
 
 class DevelopmentConfig(Config):

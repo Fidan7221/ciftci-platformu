@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_ai_macros.html" import insight_card, trend_badge, pct %}
+{% block title %}{{ category.name }} Fiyat Tahmini{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('prices.index') }}" class="link-farm">Hal Fiyatları</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 fw-bold mb-3"><i class="bi bi-stars text-farm"></i> {{ category.name }}: fiyat trendi ve tahmin</h1>
+
+  {% if insight %}
+    {% set f = insight.forecast %}
+    {% set is_producer = current_user.is_authenticated and current_user.is_producer %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        {{ insight_card(insight, mode=("producer" if is_producer else "consumer"), chart_id="detay-grafik", link=False) }}
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm"><div class="card-body small">
+          <h2 class="h6 fw-semibold">Model özeti</h2>
+          <table class="table table-sm mb-3">
+            <tr><td>Yöntem</td><td class="text-end">Doğrusal regresyon</td></tr>
+            <tr><td>Eğitim verisi</td><td class="text-end">{{ f.n_points }} gün</td></tr>
+            <tr><td>Tahmin ufku</td><td class="text-end">{{ f.horizon_days }} gün ({{ f.target_date|date_tr }})</td></tr>
+            <tr><td>Haftalık eğilim</td><td class="text-end">{{ pct(f.weekly_change_pct) }} {{ trend_badge(f.trend) }}</td></tr>
+            <tr><td>R² (doğrusal uyum)</td><td class="text-end">{{ "%.2f"|format(f.r2)|replace(".", ",") }}</td></tr>
+            <tr><td>%95 tahmin aralığı</td><td class="text-end">{{ f.lower|money }} – {{ f.upper|money }}</td></tr>
+            {% if f.backtest_mape is not none %}
+              <tr><td>Geri test hatası (MAPE)</td><td class="text-end">{{ pct(f.backtest_mape * 100) }}</td></tr>
+              <tr><td>Naif tahmin hatası</td><td class="text-end">{{ pct(f.naive_mape * 100) }}</td></tr>
+            {% endif %}
+          </table>
+          {% if f.beats_naive is not none %}
+            {% if f.beats_naive %}
+              <p class="mb-2"><i class="bi bi-check2-circle text-success"></i> Model, "fiyat değişmez" varsayımından daha isabetli.</p>
+            {% else %}
+              <p class="mb-2"><i class="bi bi-exclamation-circle text-warning"></i> Bu üründe fiyat yön değiştiriyor;
+                model "fiyat değişmez" varsayımından daha isabetli değil. Tahmini temkinli yorumlayın.</p>
+            {% endif %}
+          {% endif %}
+          <p class="text-muted mb-0">Tahmin, toptan hal fiyatlarının geçmiş seyrine dayanır; hava, bayram, ihracat gibi
+            dış etkenleri bilmez. Karar desteğidir, kesin sonuç değildir.</p>
+        </div></div>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-light border">
+      <i class="bi bi-info-circle"></i> {{ category.name }} için tahmin yapacak kadar veri yok (en az 14 günlük hal fiyatı gerekir).
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

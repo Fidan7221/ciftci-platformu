@@ -10,7 +10,8 @@ from flask_login import current_user
 from app.forms.listing_forms import ListingForm, ToggleForm
 from app.forms.producer_forms import DeleteForm, ProducerProfileForm, ProductForm
 from app.models import ListingStatus, OrderStatus, RoleName
-from app.services import category_service, listing_service, order_service, price_service, producer_service
+from app.services import (category_service, listing_service, order_service, prediction_service,
+                          price_service, producer_service)
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 from app.utils.forms import show_service_error
@@ -52,6 +53,7 @@ def _product_form_kwargs(form):
 def dashboard():
     profile = _profile()
     return render_template("producer/dashboard.html", profile=profile,
+                           insights=prediction_service.producer_insights(profile),  # Hafta 10
                            **producer_service.dashboard_data(profile))
 
 
@@ -225,7 +227,8 @@ def new_listing():
             return redirect(url_for("producer.listings"))
 
     return render_template("producer/listing_form.html", form=form, listing=None,
-                           remaining=_remaining_by_product(profile))
+                           remaining=_remaining_by_product(profile),
+                           suggestions=prediction_service.listing_suggestions(profile))
 
 
 @producer_bp.route("/ilanlar/<int:listing_id>/duzenle", methods=["GET", "POST"])
@@ -251,7 +254,8 @@ def edit_listing(listing_id):
             return redirect(url_for("producer.listings"))
 
     return render_template("producer/listing_form.html", form=form, listing=listing,
-                           remaining=_remaining_by_product(profile, exclude_listing_id=listing.id))
+                           remaining=_remaining_by_product(profile, exclude_listing_id=listing.id),
+                           suggestions=prediction_service.listing_suggestions(profile))
 
 
 @producer_bp.route("/ilanlar/<int:listing_id>/durum", methods=["POST"])

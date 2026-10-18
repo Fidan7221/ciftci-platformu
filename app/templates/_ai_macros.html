@@ -1,0 +1,101 @@
+{# Yapay zekâ tahmin kartı bileşenleri (Hafta 10)
+   Kullanım: {% from "_ai_macros.html" import insight_card, trend_badge %}
+             {{ insight_card(insight, mode="producer", chart_id="grafik-1") }} #}
+
+{% macro trend_badge(trend) %}
+  {% set meta = {"up": ("arrow-up-right", "Artış"), "down": ("arrow-down-right", "Düşüş"), "stable": ("arrow-right", "Dengeli")}[trend] %}
+  <span class="badge trend-badge trend-{{ trend }}"><i class="bi bi-{{ meta[0] }}"></i> {{ meta[1] }}</span>
+{% endmacro %}
+
+{% macro confidence_meter(value) %}
+  {% set percent = (value * 100)|round|int %}
+  <div class="d-flex align-items-center gap-2 small" title="Modelin geri testlerdeki başarısına göre güven skoru">
+    <span class="text-muted text-nowrap">Güven</span>
+    <div class="progress flex-grow-1" style="height: 6px;" role="progressbar" aria-label="Tahmin güveni"
+         aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar bg-farm" style="width: {{ percent }}%"></div>
+    </div>
+    <span class="fw-semibold">%{{ percent }}</span>
+  </div>
+{% endmacro %}
+
+{% macro pct(value) %}%{{ "%.1f"|format(value)|replace(".", ",") }}{% endmacro %}
+
+{% macro insight_card(insight, mode="producer", chart_id="fiyat-grafigi", title=None, link=True) %}
+  {% set f = insight.forecast %}
+  {% set a = insight.advice %}
+  <div class="card border-0 shadow-sm h-100 insight-card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
+      <span class="fw-semibold">
+        <i class="bi bi-stars text-farm"></i> {{ title or insight.category.name }}
+        <span class="small text-muted fw-normal">· hal fiyatı / {{ insight.unit }}</span>
+      </span>
+      {{ trend_badge(f.trend) }}
+    </div>
+    <div class="card-body">
+      <div class="row g-2 mb-2 text-center">
+        <div class="col-4"><div class="small text-muted">Bugünkü seviye</div>
+          <div class="fw-bold">{{ f.current_price|money }}</div></div>
+        <div class="col-4"><div class="small text-muted">{{ f.horizon_days }} gün sonra</div>
+          <div class="fw-bold text-farm">{{ f.predicted_price|money }}</div></div>
+        <div class="col-4"><div class="small text-muted">Beklenen değişim</div>
+          <div class="fw-bold">{{ "+" if f.expected_change_pct > 0 else "" }}{{ pct(f.expected_change_pct) }}</div></div>
+      </div>
+
+      <div class="price-chart-box mb-2">
+        <canvas data-price-chart="{{ chart_id }}-veri"
+                aria-label="{{ insight.category.name }} hal fiyatı ve {{ f.horizon_days }} günlük tahmin grafiği" role="img"></canvas>
+      </div>
+      <script type="application/json" id="{{ chart_id }}-veri">{{ insight.chart|tojson }}</script>
+
+      {{ confidence_meter(f.confidence) }}
+
+      {% if mode == "producer" %}
+        <div class="advice advice-{{ a.action }} mt-3">
+          <div class="fw-semibold">{{ a.headline }}</div>
+          <div class="small text-muted">{{ a.detail }}</div>
+        </div>
+        <div class="small mt-2">
+          <i class="bi bi-tag"></i> Önerilen doğrudan satış fiyatı:
+          <strong>{{ a.suggested_price|money }}</strong>
+          <span class="text-muted">(taban {{ a.suggested_min|money }} · tavan {{ a.suggested_max|money }})</span>
+        </div>
+      {% else %}
+        <div class="small mt-3"><i class="bi bi-info-circle"></i> {{ insight.consumer_hint }}
+          Tahmin aralığı: {{ f.lower|money }} – {{ f.upper|money }}.</div>
+      {% endif %}
+
+      {% if insight.data_age_days > 2 %}
+        <div class="small text-warning mt-2"><i class="bi bi-exclamation-triangle"></i>
+          Son fiyat verisi {{ insight.data_age_days }} gün önceye ait.</div>
+      {% endif %}
+
+      <details class="small mt-2">
+        <summary class="text-muted">Nasıl hesaplandı?</summary>
+        <p class="mb-1 mt-1">Son {{ f.n_points }} günün hal fiyatına doğrusal regresyon uygulandı
+          (eğim: günde {{ "%.2f"|format(f.slope_per_day)|replace(".", ",") }} ₺).
+          {% if f.backtest_mape is not none %}
+            Geri testte ortalama hata {{ pct(f.backtest_mape * 100) }};
+            "fiyat değişmez" varsayımının hatası {{ pct(f.naive_mape * 100) }}.
+          {% endif %}
+          Bu bir tahmindir, kesin değildir.</p>
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Gün</th><th class="text-end">Hal fiyatı</th><th class="text-end">Tahmin</th></tr></thead>
+          <tbody>
+            {% for i in range(insight.chart.labels|length) if insight.chart.actual[i] is not none or insight.chart.predicted[i] is not none %}
+              {% if loop.revindex <= 10 %}
+                <tr><td>{{ insight.chart.labels[i] }}</td>
+                    <td class="text-end">{{ insight.chart.actual[i]|money if insight.chart.actual[i] is not none else "—" }}</td>
+                    <td class="text-end">{{ insight.chart.predicted[i]|money if insight.chart.predicted[i] is not none else "—" }}</td></tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
+
+      {% if link %}
+        <a href="{{ url_for('prices.detail', slug=insight.category.slug) }}" class="small link-farm d-inline-block mt-2">Ayrıntılı analiz →</a>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}

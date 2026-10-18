@@ -142,3 +142,15 @@ body { background: #f6f8f4; }
 .nav-pills .nav-link.active { background-color: var(--farm); }
 .nav-pills .nav-link { color: var(--farm-dark); }
 .form-select:focus { border-color: var(--farm); box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .2); }
+
+/* --- Hafta 10: yapay zekâ tahmin kartları --- */
+.price-chart-box { position: relative; height: 210px; }
+.trend-badge { background: #f1f3f0; color: #1f2a1f; border: 1px solid #dfe5dc; font-weight: 600; }
+.trend-badge.trend-up i { color: var(--farm); }
+.trend-badge.trend-down i { color: var(--earth); }
+.advice { border-left: 4px solid #ced4da; padding: .5rem .75rem; background: #f8f9fa; border-radius: .25rem; }
+.advice-wait { border-left-color: var(--farm); background: var(--farm-soft); }
+.advice-sell_now { border-left-color: var(--earth); background: #fbf4ec; }
+.advice-low_confidence { border-left-color: #adb5bd; }
+.bg-farm { background-color: var(--farm) !important; }
+.ai-suggestion { background: var(--farm-soft); border: 1px dashed var(--farm); border-radius: .5rem; }

@@ -2,6 +2,23 @@
 
 Sürüm numaraları [Semantic Versioning](https://semver.org/lang/tr/) kuralına uyar: `ANA.ARA.YAMA[-ön-sürüm]`.
 
+## [0.10.0] — 2026-10-19 · Yapay zekâ: fiyat tahmini ve trend analizi
+
+### Eklendi
+- `app/ai/trend_model.py`: doğrusal regresyon (scikit-learn) ile 7 günlük hal fiyatı tahmini, trend (artış/düşüş/dengeli),
+  %95 tahmin aralığı, aykırı değer budama, walk-forward geri test (naif tahminle kıyas), güven skoru.
+- `app/ai/sell_advisor.py`: satış zamanı önerisi (bekle / şimdi sat / dengeli / düşük güven) ve fiyat bandı (taban-önerilen-tavan).
+- `prediction_service`: kategori serisinden tahmin, `price_predictions` tablosuna kayıt (upsert), panel kartları.
+- Arayüz: üretici panelinde AI kartları ve grafik, ilan formunda "Önerilen fiyatı kullan", müşteri panelinde
+  piyasa trendleri, fiyat tablosunda "7 gün tahmini" sütunu, `/fiyatlar/<ürün>` model özeti sayfası, ilan detayında trend kartı.
+- Chart.js grafik bileşeni (`static/js/price_chart.js`), `docs/MODEL_KARTI.md`, `flask predict-prices`.
+- `tests/test_ai.py` (32 test) — toplam 183.
+
+### Değişti
+- `price_predictions` tablosuna `current_price`, `lower_price`, `upper_price`, `suggested_min_price`, `suggested_price`,
+  `suggested_max_price`, `action`, `backtest_mape` eklendi (migration).
+- `requirements.txt`: `numpy`, `scikit-learn`. `seed-demo` artık 60 günlük fiyat ve tahmin üretir.
+
 ## [0.9.0] — 2026-10-19 · Harici API entegrasyonu
 
 ### Eklendi

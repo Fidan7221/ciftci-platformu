@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ai_macros.html" import trend_badge %}
 {% block title %}Hal Fiyatları{% endblock %}
 
 {% block content %}
@@ -32,13 +33,17 @@
         <table class="table align-middle mb-0">
           <thead class="table-light">
             <tr><th>Ürün</th><th class="text-end">En düşük</th><th class="text-end">Ortalama</th>
-                <th class="text-end">En yüksek</th><th class="text-end">Değişim</th></tr>
+                <th class="text-end">En yüksek</th><th class="text-end">Değişim</th>
+                <th class="text-end">7 gün tahmini <span class="badge text-bg-light border">AI</span></th></tr>
           </thead>
           <tbody>
             {% for row in board.rows %}
               {% set p = row.price %}
               <tr>
-                <td class="fw-medium">{{ p.product_name }} <span class="small text-muted">/ {{ p.unit }}</span></td>
+                <td class="fw-medium">
+                  {% if p.category %}<a href="{{ url_for('prices.detail', slug=p.category.slug) }}" class="link-farm">{{ p.product_name }}</a>
+                  {% else %}{{ p.product_name }}{% endif %}
+                  <span class="small text-muted">/ {{ p.unit }}</span></td>
                 <td class="text-end">{{ p.min_price|money }}</td>
                 <td class="text-end fw-semibold">{{ p.avg_price|money }}</td>
                 <td class="text-end">{{ p.max_price|money }}</td>
@@ -48,6 +53,11 @@
                   {% elif row.change < 0 %}<span class="text-success"><i class="bi bi-caret-down-fill"></i> %{{ (-row.change)|qty }}</span>
                   {% else %}<span class="text-muted">%0</span>{% endif %}
                 </td>
+                {% set f = forecasts.get(p.category_id) %}
+                <td class="text-end text-nowrap">
+                  {% if f %}{{ f.predicted_price|money }} {{ trend_badge(f.trend) }}
+                  {% else %}<span class="small text-muted">veri yetersiz</span>{% endif %}
+                </td>
               </tr>
             {% endfor %}
           </tbody>
@@ -55,7 +65,8 @@
       </div>
     </div>
     <p class="small text-muted mt-2 mb-0">Değişim, ürünün bir önceki kayıtlı gününe göre ortalama fiyattaki farktır.
-      Bu fiyatlar üreticilere ilan fiyatı belirlerken referans olarak gösterilir.</p>
+      Bu fiyatlar üreticilere ilan fiyatı belirlerken referans olarak gösterilir.
+      Tahminler son 30 günün verisiyle doğrusal regresyonla üretilir; ayrıntı için ürün adına tıklayın.</p>
   {% else %}
     <div class="text-center text-muted py-5">
       <i class="bi bi-graph-up display-5 d-block mb-2"></i>
