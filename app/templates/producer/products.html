@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_pagination, product_image %}
+{% block title %}Ürünlerim{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-box-seam text-farm"></i> Ürünlerim</h1>
+    <a href="{{ url_for('producer.new_product') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Yeni ürün</a>
+  </div>
+
+  <!-- Arama ve filtre (GET formu: sonuç adresi paylaşılabilir, CSRF gerekmez) -->
+  <form method="get" class="row g-2 mb-4" role="search">
+    <div class="col-md-6">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="search" name="q" value="{{ search }}" class="form-control" placeholder="Ürün adında ara">
+      </div>
+    </div>
+    <div class="col-md-4">
+      <select name="kategori" class="form-select" aria-label="Kategori">
+        <option value="0">Tüm kategoriler</option>
+        {% for group, options in category_groups.items() %}
+          <optgroup label="{{ group }}">
+            {% for value, label in options %}
+              <option value="{{ value }}" {{ 'selected' if value == category_id }}>{{ label }}</option>
+            {% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid">
+      <button class="btn btn-outline-secondary" type="submit">Filtrele</button>
+    </div>
+  </form>
+
+  {% if pagination.items %}
+    <div class="row g-3">
+      {% for product in pagination.items %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+          <div class="card product-card h-100 border-0 shadow-sm {{ 'is-archived' if not product.is_active }}">
+            {{ product_image(product, "product-thumb card-img-top") }}
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <h2 class="h6 fw-semibold mb-1">{{ product.name }}</h2>
+                {% if product.is_organic %}<span class="badge text-bg-success">Organik</span>{% endif %}
+              </div>
+              <div class="small text-muted mb-2">{{ product.category.name }}</div>
+
+              <div class="mt-auto">
+                <div class="d-flex justify-content-between small mb-2">
+                  <span>Stok</span>
+                  <span class="fw-semibold {{ 'text-danger' if product.stock_quantity <= 5 }}">
+                    {{ product.stock_quantity|qty }} {{ product.unit }}
+                  </span>
+                </div>
+                {% if not product.is_active %}
+                  <span class="badge text-bg-secondary mb-2">Satışa kapalı</span>
+                {% endif %}
+                {% if product.is_active %}
+                  <a href="{{ url_for('producer.new_listing', urun=product.id) }}" class="btn btn-sm btn-farm w-100 mb-2">
+                    <i class="bi bi-megaphone"></i> İlan aç
+                  </a>
+                {% endif %}
+                <div class="d-flex gap-2">
+                  <a href="{{ url_for('producer.edit_product', product_id=product.id) }}"
+                     class="btn btn-sm btn-outline-secondary flex-grow-1"><i class="bi bi-pencil"></i> Düzenle</a>
+                  <form method="post" action="{{ url_for('producer.delete_product', product_id=product.id) }}"
+                        onsubmit="return confirm('Bu ürün silinsin mi? Bu işlem geri alınamaz.');">
+                    {{ delete_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Sil">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <p class="text-muted small text-center mt-3 mb-0">Toplam {{ pagination.total }} ürün</p>
+    {{ render_pagination(pagination, "producer.products", q=search, kategori=category_id or 0) }}
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-inbox display-5 d-block mb-2"></i>
+      {% if search or category_id %}
+        Aramanıza uyan ürün bulunamadı. <a href="{{ url_for('producer.products') }}" class="link-farm">Filtreyi temizle</a>
+      {% else %}
+        Henüz ürününüz yok. <a href="{{ url_for('producer.new_product') }}" class="link-farm">İlk ürününüzü ekleyin</a>.
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

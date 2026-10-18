@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Yönetici Paneli{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold mb-1"><i class="bi bi-shield-lock text-farm"></i> Yönetici Paneli</h1>
+  <p class="text-muted">Platformun genel durumu.</p>
+
+  <div class="row g-3 mb-4">
+    {% for label, value, icon in [
+        ("Kullanıcı", stats.users, "people"),
+        ("Satıştaki ürün", stats.products, "box-seam"),
+        ("Aktif ilan", stats.listings, "megaphone"),
+        ("Toplam sipariş", stats.orders, "receipt"),
+        ("Açık sipariş", stats.open_orders, "hourglass-split"),
+      ] %}
+      <div class="col-6 col-md-4 col-xl-2"><div class="card stat-card h-100"><div class="card-body">
+        <div class="text-muted small"><i class="bi bi-{{ icon }}"></i> {{ label }}</div>
+        <div class="fs-3 fw-bold">{{ value }}</div>
+      </div></div></div>
+    {% endfor %}
+    <div class="col-12 col-md-4 col-xl-2"><div class="card stat-card h-100"><div class="card-body">
+      <div class="text-muted small"><i class="bi bi-cash-coin"></i> Ödenen ciro</div>
+      <div class="fs-5 fw-bold">{{ stats.revenue|money }}</div>
+    </div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <a href="{{ url_for('admin.orders') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
+        <i class="bi bi-receipt fs-3 text-farm"></i>
+        <div class="fw-semibold mt-2">Tüm siparişler</div>
+        <div class="small text-muted">Durum filtreleyerek izle; gerekirse müdahale et</div>
+      </div></a>
+    </div>
+    <div class="col-md-6">
+      <a href="{{ url_for('admin.categories') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
+        <i class="bi bi-diagram-3 fs-3 text-farm"></i>
+        <div class="fw-semibold mt-2">Kategori yönetimi</div>
+        <div class="small text-muted">Ürün kategorilerini ekle, düzenle, sil</div>
+      </div></a>
+    </div>
+  </div>
+</div>
+{% endblock %}

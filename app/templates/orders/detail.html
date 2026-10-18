@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Sipariş #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      {% if actor == "producer" %}
+        <li class="breadcrumb-item"><a href="{{ url_for('producer.orders') }}" class="link-farm">Gelen Siparişler</a></li>
+      {% elif actor == "customer" %}
+        <li class="breadcrumb-item"><a href="{{ url_for('orders.my_orders') }}" class="link-farm">Siparişlerim</a></li>
+      {% elif actor == "admin" %}
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.orders') }}" class="link-farm">Tüm Siparişler</a></li>
+      {% endif %}
+      <li class="breadcrumb-item active" aria-current="page">Sipariş #{{ order.id }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-1">Sipariş #{{ order.id }}</h1>
+      <div class="text-muted small">{{ order.created_at|datetime_tr }} · Son güncelleme {{ order.updated_at|datetime_tr }}</div>
+    </div>
+    <span class="badge fs-6 {{ order.status_badge }}">{{ order.status_label }}</span>
+  </div>
+
+  <!-- Durum çizelgesi -->
+  {% if order.status != "cancelled" %}
+    {% set current_index = flow.index(order.status) %}
+    <ol class="order-steps mb-4">
+      {% for step in flow %}
+        <li class="{{ 'done' if loop.index0 <= current_index }}">
+          <span class="order-step-dot">{% if loop.index0 <= current_index %}<i class="bi bi-check-lg"></i>{% else %}{{ loop.index }}{% endif %}</span>
+          <span class="small">{{ {"pending": "Sipariş alındı", "paid": "Ödendi", "shipped": "Kargoda", "delivered": "Teslim edildi"}[step] }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <div class="alert alert-secondary"><i class="bi bi-x-circle"></i> Bu sipariş iptal edildi; stoklar geri eklendi.</div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-tree text-farm"></i> {{ order.producer.farm_name if order.producer else "" }}
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Ürün</th><th class="text-end">Miktar</th><th class="text-end">Birim fiyat</th><th class="text-end">Tutar</th></tr>
+            </thead>
+            <tbody>
+              {% for item in order.items %}
+                <tr>
+                  <td>{{ item.listing.title }}</td>
+                  <td class="text-end text-nowrap">{{ item.quantity|qty }} {{ item.listing.product.unit }}</td>
+                  <td class="text-end text-nowrap">{{ item.unit_price|money }}</td>
+                  <td class="text-end text-nowrap fw-semibold">{{ item.subtotal|money }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr><th colspan="3" class="text-end">Toplam</th><th class="text-end text-farm fs-5">{{ order.total_amount|money }}</th></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <p class="small text-muted mt-2"><i class="bi bi-lock"></i> Birim fiyatlar sipariş anında sabitlenmiştir; ilan fiyatı değişse de bu sipariş etkilenmez.</p>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+        <h2 class="h6 fw-semibold">Teslimat</h2>
+        <div class="small">{{ order.customer.full_name }}{% if order.customer.phone %} · {{ order.customer.phone }}{% endif %}</div>
+        <div class="small text-muted">{{ order.shipping_address }}</div>
+        {% if order.note %}<div class="small mt-2"><span class="fw-semibold">Not:</span> {{ order.note }}</div>{% endif %}
+      </div></div>
+
+      {% if actions %}
+        <div class="card border-0 shadow-sm"><div class="card-body d-grid gap-2">
+          <h2 class="h6 fw-semibold">İşlemler</h2>
+          {% for action in actions %}
+            <form method="post" action="{{ url_for('orders.change_status', order_id=order.id) }}"
+                  onsubmit="return confirm('{{ action.confirm }}');" class="d-grid">
+              {{ status_form.csrf_token }}
+              <input type="hidden" name="status" value="{{ action.status }}">
+              <button type="submit" class="btn {{ action.css }}">{{ action.label }}</button>
+            </form>
+          {% endfor %}
+        </div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

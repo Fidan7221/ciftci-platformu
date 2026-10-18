@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox %}
+{% block title %}{{ "İlanı Düzenle" if listing else "Yeni İlan" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('producer.dashboard') }}" class="link-farm">Panel</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('producer.listings') }}" class="link-farm">İlanlarım</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ listing.title if listing else "Yeni ilan" }}</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm"><div class="card-body p-4 p-md-5">
+        <h1 class="h4 fw-bold mb-1">{{ "İlanı düzenle" if listing else "Yeni ilan aç" }}</h1>
+        <p class="text-muted small mb-4">İlan, deponuzdaki ürünün belirli bir fiyat ve miktarla satışa sunulmasıdır.</p>
+
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {{ render_field(form.product_id, id="product_id") }}
+          <div id="remaining-hint" class="form-text mt-n2 mb-3"></div>
+
+          {{ render_field(form.title, placeholder="Örn. Taze hasat salkım domates", help=form.title.description) }}
+
+          <div class="row">
+            <div class="col-md-4">{{ render_field(form.price, icon="currency-exchange", type="number", step="0.01", min="0.01") }}</div>
+            <div class="col-md-4">{{ render_field(form.stock_quantity, type="number", step="0.01", min="0") }}</div>
+            <div class="col-md-4">{{ render_field(form.min_order_quantity, type="number", step="0.01", min="0.01") }}</div>
+            <div class="col-md-6">{{ render_field(form.start_date, icon="calendar-event") }}</div>
+            <div class="col-md-6">{{ render_field(form.end_date, icon="calendar-x", help=form.end_date.description) }}</div>
+          </div>
+
+          {{ render_checkbox(form.is_active, switch=True) }}
+          {% if listing and listing.order_items %}
+            <div class="alert alert-light border small">
+              <i class="bi bi-info-circle"></i> Bu ilanda {{ listing.order_items|length }} sipariş kalemi var.
+              Fiyatı değiştirirseniz eski siparişler etkilenmez; onların fiyatı sipariş anında dondurulmuştur.
+            </div>
+          {% endif %}
+
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{{ url_for('producer.listings') }}" class="btn btn-outline-secondary">Vazgeç</a>
+            {{ form.submit(class="btn btn-farm px-4") }}
+          </div>
+        </form>
+      </div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Seçilen ürün için ilana ayrılabilecek miktarı göster (bilgi amaçlı; asıl kontrol sunucuda)
+  (function () {
+    const remaining = {
+      {% for product_id, info in remaining.items() %}
+        "{{ product_id }}": "{{ info[0]|qty }} {{ info[1] }}",
+      {% endfor %}
+    };
+    const select = document.getElementById("product_id");
+    const hint = document.getElementById("remaining-hint");
+    function update() {
+      const value = remaining[select.value];
+      hint.textContent = value ? "Bu ürün için ilana ayrılabilecek en fazla miktar: " + value : "";
+    }
+    select.addEventListener("change", update);
+    update();
+  })();
+</script>
+{% endblock %}

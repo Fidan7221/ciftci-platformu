@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% block title %}Hesap Bilgilerim{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm"><div class="card-body p-4 p-md-5">
+        <h1 class="h4 fw-bold mb-1">Hesap bilgilerim</h1>
+        <p class="text-muted small mb-4">Teslimat adresiniz sipariş onay sayfasında otomatik doldurulur.</p>
+
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="row">
+            <div class="col-md-6">{{ render_field(form.full_name, icon="person", autocomplete="name") }}</div>
+            <div class="col-md-6">
+              <label class="form-label fw-medium">E-posta</label>
+              <input type="email" class="form-control mb-3" value="{{ current_user.email }}" disabled>
+            </div>
+            <div class="col-md-6">{{ render_field(form.phone, icon="telephone", placeholder="05XXXXXXXXX", autocomplete="tel") }}</div>
+            <div class="col-md-6">{{ render_field(form.city, icon="geo-alt") }}</div>
+            <div class="col-12">{{ render_field(form.address, rows=3, placeholder="Mahalle, cadde/sokak, bina ve daire no, ilçe / il") }}</div>
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Vazgeç</a>
+            {{ form.submit(class="btn btn-farm px-4") }}
+          </div>
+        </form>
+      </div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

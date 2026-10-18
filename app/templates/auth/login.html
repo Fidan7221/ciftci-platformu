@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox %}
+
+{% block title %}Giriş Yap{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+      <div class="card auth-card border-0 shadow overflow-hidden">
+        <div class="row g-0">
+
+          <!-- Sol: tanıtım paneli (küçük ekranlarda gizlenir) -->
+          <div class="col-md-5 d-none d-md-flex auth-side text-white p-5 flex-column justify-content-between">
+            <div>
+              <i class="bi bi-flower1 display-5"></i>
+              <h2 class="h3 fw-bold mt-3">Tekrar hoş geldiniz</h2>
+              <p class="opacity-75 mb-0">Üreticiden doğrudan alın, emeğinizi aracısız satın.</p>
+            </div>
+            <ul class="list-unstyled small opacity-75 mb-0">
+              <li class="mb-2"><i class="bi bi-check2-circle me-2"></i>Güncel hal fiyatları</li>
+              <li class="mb-2"><i class="bi bi-check2-circle me-2"></i>Akıllı satış zamanı önerisi</li>
+              <li><i class="bi bi-check2-circle me-2"></i>Güvenilir üretici puanları</li>
+            </ul>
+          </div>
+
+          <!-- Sağ: form -->
+          <div class="col-md-7 p-4 p-md-5 bg-white">
+            <h1 class="h3 fw-bold mb-1">Giriş Yap</h1>
+            <p class="text-muted mb-4">Hesabınız yok mu?
+              <a href="{{ url_for('auth.register') }}" class="link-farm">Hemen kayıt olun</a>
+            </p>
+
+            <form method="post" novalidate>
+              {{ form.hidden_tag() }}
+              {{ render_field(form.email, icon="envelope", placeholder="ornek@mail.com", autocomplete="email", autofocus=true) }}
+              {{ render_field(form.password, icon="lock", placeholder="Parolanız", autocomplete="current-password") }}
+              {{ render_checkbox(form.remember_me) }}
+              {{ form.submit(class="btn btn-farm w-100 py-2 fw-semibold") }}
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

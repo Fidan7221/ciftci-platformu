@@ -1,0 +1,75 @@
+{# Form alanlarını Bootstrap 5 biçiminde çizen yardımcı makrolar.
+   Kullanım: {% from "_macros.html" import render_field %}
+             {{ render_field(form.email, icon="envelope", placeholder="ornek@mail.com") }} #}
+
+{% macro render_field(field, icon=None, help=None) %}
+  {% set base_class = "form-select" if field.type == "SelectField" else "form-control" %}
+  <div class="mb-3">
+    {{ field.label(class="form-label fw-medium") }}
+    <div class="input-group has-validation">
+      {% if icon %}
+        <span class="input-group-text"><i class="bi bi-{{ icon }}"></i></span>
+      {% endif %}
+      {{ field(class=base_class + (" is-invalid" if field.errors else ""), **kwargs) }}
+      {% if field.type == "PasswordField" %}
+        <button class="btn btn-outline-secondary toggle-password" type="button"
+                data-target="{{ field.id }}" aria-label="Parolayı göster">
+          <i class="bi bi-eye"></i>
+        </button>
+      {% endif %}
+      {% for error in field.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro render_checkbox(field, switch=False) %}
+  <div class="form-check {{ 'form-switch' if switch }} mb-3">
+    {{ field(class="form-check-input" + (" is-invalid" if field.errors else "")) }}
+    {{ field.label(class="form-check-label" + ("" if switch else " small")) }}
+    {% for error in field.errors %}
+      <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{# Sayfalama: render_pagination(pagination, "producer.products", q=search) #}
+{% macro render_pagination(pagination, endpoint) %}
+  {% if pagination.pages > 1 %}
+  <nav aria-label="Sayfalar" class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+        <a class="page-link" href="{{ url_for(endpoint, sayfa=pagination.prev_num, **kwargs) if pagination.has_prev else '#' }}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+      {% for num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if num %}
+          <li class="page-item {{ 'active' if num == pagination.page }}">
+            <a class="page-link" href="{{ url_for(endpoint, sayfa=num, **kwargs) }}">{{ num }}</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+        <a class="page-link" href="{{ url_for(endpoint, sayfa=pagination.next_num, **kwargs) if pagination.has_next else '#' }}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+{% endmacro %}
+
+{# Ürün görseli ya da yer tutucu #}
+{% macro product_image(product, css_class="product-thumb") %}
+  {% if product.image_path %}
+    <img src="{{ url_for('static', filename='uploads/' ~ product.image_path) }}"
+         alt="{{ product.name }}" class="{{ css_class }}" loading="lazy">
+  {% else %}
+    <div class="{{ css_class }} product-thumb-empty"><i class="bi bi-image"></i></div>
+  {% endif %}
+{% endmacro %}

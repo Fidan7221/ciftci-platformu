@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox %}
+{% block title %}Siparişi Onayla{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('cart.view') }}" class="link-farm">Sepetim</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Siparişi onayla</li>
+    </ol>
+  </nav>
+
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm"><div class="card-body p-4">
+          <h1 class="h4 fw-bold mb-4">Teslimat bilgileri</h1>
+          <div class="mb-3 small text-muted">
+            <i class="bi bi-person"></i> {{ current_user.full_name }}
+            {% if current_user.phone %} · <i class="bi bi-telephone"></i> {{ current_user.phone }}{% endif %}
+          </div>
+          {{ render_field(form.shipping_address, rows=3,
+                          placeholder="Mahalle, cadde/sokak, bina ve daire no, ilçe / il") }}
+          {{ render_checkbox(form.save_address) }}
+          {{ render_field(form.note, rows=2, placeholder="İsteğe bağlı. Örn. Hafta sonu teslim edilsin.") }}
+        </div></div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm"><div class="card-body p-4">
+          <h2 class="h6 fw-semibold mb-3">Sipariş özeti</h2>
+          {% for producer, items in summary.groups.items() %}
+            <div class="small fw-semibold text-farm mt-2">{{ producer.farm_name }}</div>
+            {% for item in items %}
+              <div class="d-flex justify-content-between small py-1">
+                <span>{{ item.listing.title }} × {{ item.quantity|qty }} {{ item.listing.product.unit }}</span>
+                <span class="text-nowrap">{{ item.subtotal|money }}</span>
+              </div>
+            {% endfor %}
+          {% endfor %}
+          <div class="d-flex justify-content-between fs-5 fw-bold border-top pt-3 mt-3">
+            <span>Toplam</span><span class="text-farm">{{ summary.total|money }}</span>
+          </div>
+          <p class="small text-muted mt-3 mb-3">
+            <i class="bi bi-shield-check"></i> Siparişi onayladığınızda stoklar sizin için ayrılır.
+            Ödeme adımı Hafta 9'da eklenecek; şimdilik ödeme üretici tarafından onaylanır.
+          </p>
+          {{ form.submit(class="btn btn-farm w-100 py-2 fw-semibold") }}
+        </div></div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

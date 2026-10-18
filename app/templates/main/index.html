@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block content %}
+<section class="hero py-5">
+  <div class="container py-md-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <span class="badge rounded-pill text-bg-light text-farm mb-3">Aracısız · Adil · Taze</span>
+        <h1 class="display-5 fw-bold">Tarladan doğrudan sofranıza</h1>
+        <p class="lead text-muted">Çiftçiler ürünlerini güncel piyasa fiyatlarını izleyerek satar,
+          müşteriler taze ürünü doğrudan üreticiden alır.</p>
+        <a href="{{ url_for('market.index') }}" class="btn btn-farm btn-lg me-2"><i class="bi bi-shop"></i> Pazara göz at</a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg">Panelime git</a>
+        {% else %}
+          <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg me-2">Hemen katıl</a>
+          <a href="{{ url_for('auth.login') }}" class="btn btn-link link-farm btn-lg">Giriş yap</a>
+        {% endif %}
+      </div>
+      <div class="col-lg-5 text-center d-none d-lg-block">
+        <i class="bi bi-basket2-fill hero-icon"></i>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

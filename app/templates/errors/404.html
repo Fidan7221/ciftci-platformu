@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Sayfa Bulunamadı{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <i class="bi bi-signpost-split display-1 text-farm"></i>
+  <h1 class="h2 fw-bold mt-3">404 · Sayfa bulunamadı</h1>
+  <p class="text-muted">Aradığınız sayfa taşınmış ya da hiç var olmamış olabilir.</p>
+  <a href="{{ url_for('main.index') }}" class="btn btn-farm">Ana sayfaya dön</a>
+</div>
+{% endblock %}

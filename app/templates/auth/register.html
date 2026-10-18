@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox %}
+
+{% block title %}Kayıt Ol{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+      <div class="card auth-card border-0 shadow">
+        <div class="card-body p-4 p-md-5">
+          <h1 class="h3 fw-bold mb-1">Hesap Oluştur</h1>
+          <p class="text-muted mb-4">Zaten üye misiniz?
+            <a href="{{ url_for('auth.login') }}" class="link-farm">Giriş yapın</a>
+          </p>
+
+          <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <!-- Hesap türü: kart görünümlü radyo düğmeleri -->
+            <label class="form-label fw-medium">{{ form.role.label.text }}</label>
+            <div class="row g-3 mb-4" id="role-choices">
+              {% for option in form.role %}
+                <div class="col-sm-6">
+                  {{ option(class="btn-check", autocomplete="off") }}
+                  <label class="btn role-card w-100 text-start p-3" for="{{ option.id }}">
+                    {% if option.data == "producer" %}
+                      <i class="bi bi-tree fs-3 d-block mb-1"></i>
+                      <span class="fw-semibold d-block">{{ option.label.text }}</span>
+                      <small class="text-muted">Ürünlerimi doğrudan satmak istiyorum</small>
+                    {% else %}
+                      <i class="bi bi-basket2 fs-3 d-block mb-1"></i>
+                      <span class="fw-semibold d-block">{{ option.label.text }}</span>
+                      <small class="text-muted">Üreticiden taze ürün almak istiyorum</small>
+                    {% endif %}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+            {% for error in form.role.errors %}
+              <div class="text-danger small mb-3">{{ error }}</div>
+            {% endfor %}
+
+            <div class="row">
+              <div class="col-md-6">{{ render_field(form.full_name, icon="person", placeholder="Ad Soyad", autocomplete="name") }}</div>
+              <div class="col-md-6">{{ render_field(form.email, icon="envelope", placeholder="ornek@mail.com", autocomplete="email") }}</div>
+              <div class="col-md-6">{{ render_field(form.phone, icon="telephone", placeholder="05XXXXXXXXX", autocomplete="tel") }}</div>
+              <div class="col-md-6">{{ render_field(form.city, icon="geo-alt", placeholder="Bingöl") }}</div>
+            </div>
+
+            <!-- Yalnızca üretici seçilince görünür (auth.js) -->
+            <fieldset id="producer-fields" class="producer-box rounded-3 p-3 mb-3">
+              <legend class="fs-6 fw-semibold text-farm mb-2"><i class="bi bi-house-heart"></i> İşletme bilgileri</legend>
+              <div class="row">
+                <div class="col-md-6">{{ render_field(form.farm_name, icon="shop", placeholder="Örn. Genç Organik Çiftliği") }}</div>
+                <div class="col-md-6">{{ render_field(form.region, icon="map", placeholder="Örn. Bingöl / Genç") }}</div>
+              </div>
+            </fieldset>
+
+            <div class="row">
+              <div class="col-md-6">
+                {{ render_field(form.password, icon="lock", autocomplete="new-password",
+                                help="En az 8 karakter; harf ve rakam içermeli.") }}
+              </div>
+              <div class="col-md-6">{{ render_field(form.confirm_password, icon="lock-fill", autocomplete="new-password") }}</div>
+            </div>
+
+            {{ render_checkbox(form.accept_terms) }}
+            {{ form.submit(class="btn btn-farm w-100 py-2 fw-semibold") }}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

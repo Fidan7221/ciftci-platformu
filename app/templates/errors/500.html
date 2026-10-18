@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Bir Hata Oluştu{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <i class="bi bi-exclamation-octagon display-1 text-danger"></i>
+  <h1 class="h2 fw-bold mt-3">500 · Beklenmeyen bir hata oluştu</h1>
+  <p class="text-muted">İşleminiz kaydedilmedi. Lütfen biraz sonra tekrar deneyin.</p>
+  <a href="{{ url_for('main.index') }}" class="btn btn-farm">Ana sayfaya dön</a>
+</div>
+{% endblock %}

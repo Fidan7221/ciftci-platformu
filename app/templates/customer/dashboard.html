@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Müşteri Paneli{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold mb-1"><i class="bi bi-basket2 text-farm"></i> Müşteri Paneli</h1>
+  <p class="text-muted">Merhaba {{ current_user.full_name }}, bugün tarladan ne geliyor?</p>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <a href="{{ url_for('market.index') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
+        <i class="bi bi-shop fs-3 text-farm"></i>
+        <div class="fw-semibold mt-2">Pazara git</div>
+        <div class="small text-muted">Üreticilerin güncel ilanları</div>
+      </div></a>
+    </div>
+    <div class="col-md-4">
+      <a href="{{ url_for('cart.view') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
+        <i class="bi bi-cart3 fs-3 text-farm"></i>
+        <div class="fw-semibold mt-2">Sepetim {% if cart_count %}<span class="badge text-bg-success">{{ cart_count }}</span>{% endif %}</div>
+        <div class="small text-muted">Siparişi tamamlayın</div>
+      </div></a>
+    </div>
+    <div class="col-md-4">
+      <a href="{{ url_for('orders.my_orders') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
+        <i class="bi bi-bag-check fs-3 text-farm"></i>
+        <div class="fw-semibold mt-2">Siparişlerim</div>
+        <div class="small text-muted">Durumunu takip edin, teslim aldığınızı onaylayın</div>
+      </div></a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">Son siparişlerim</span>
+      <a href="{{ url_for('orders.my_orders') }}" class="link-farm small">Tümünü gör</a>
+    </div>
+    {% if recent_orders %}
+      <div class="list-group list-group-flush">
+        {% for order in recent_orders %}
+          <a href="{{ url_for('orders.detail', order_id=order.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <span><span class="fw-medium">#{{ order.id }}</span>
+              <span class="small text-muted ms-2">{{ order.producer.farm_name if order.producer else "" }} · {{ order.created_at|datetime_tr }}</span></span>
+            <span class="text-nowrap"><span class="fw-semibold me-2">{{ order.total_amount|money }}</span>
+              <span class="badge {{ order.status_badge }}">{{ order.status_label }}</span></span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card-body text-muted small">Henüz siparişiniz yok.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

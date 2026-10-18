@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_pagination, product_image %}
+{% block title %}İlanlarım{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-megaphone text-farm"></i> İlanlarım</h1>
+    <a href="{{ url_for('producer.new_listing') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Yeni ilan</a>
+  </div>
+
+  <!-- Durum sekmeleri -->
+  <ul class="nav nav-pills mb-3 small">
+    <li class="nav-item"><a class="nav-link {{ 'active' if not status }}" href="{{ url_for('producer.listings') }}">Tümü</a></li>
+    {% for key, label in statuses.items() %}
+      <li class="nav-item"><a class="nav-link {{ 'active' if status == key }}" href="{{ url_for('producer.listings', durum=key) }}">{{ label }}</a></li>
+    {% endfor %}
+  </ul>
+
+  {% if pagination.items %}
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>İlan</th><th class="text-end">Fiyat</th><th class="text-end">Kalan</th>
+                <th>Tarih</th><th>Durum</th><th class="text-end">İşlem</th></tr>
+          </thead>
+          <tbody>
+            {% for listing in pagination.items %}
+              {% set unit = listing.product.unit %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {{ product_image(listing.product, "product-thumb-sm") }}
+                    <div>
+                      <a href="{{ url_for('market.detail', listing_id=listing.id) }}" class="fw-medium link-farm">{{ listing.title }}</a>
+                      <div class="small text-muted">{{ listing.product.name }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-end text-nowrap">{{ listing.price|money }} <span class="small text-muted">/{{ unit }}</span></td>
+                <td class="text-end text-nowrap">{{ listing.stock_quantity|qty }} {{ unit }}</td>
+                <td class="small text-nowrap">{{ listing.start_date|date_tr }}{% if listing.end_date %} – {{ listing.end_date|date_tr }}{% endif %}</td>
+                <td><span class="badge {{ badges[listing.status] }}">{{ listing.status_label }}</span></td>
+                <td class="text-end text-nowrap">
+                  <a href="{{ url_for('producer.edit_listing', listing_id=listing.id) }}" class="btn btn-sm btn-outline-secondary" aria-label="Düzenle"><i class="bi bi-pencil"></i></a>
+                  <form method="post" class="d-inline"
+                        action="{{ url_for('producer.toggle_listing', listing_id=listing.id, durum=status) }}">
+                    {{ toggle_form.hidden_tag() }}
+                    {% if listing.status == 'closed' %}
+                      <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-play-fill"></i> Satışa aç</button>
+                    {% else %}
+                      <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pause-fill"></i> Pasif yap</button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {{ render_pagination(pagination, "producer.listings", durum=status) }}
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-megaphone display-5 d-block mb-2"></i>
+      Bu görünümde ilan yok. <a href="{{ url_for('producer.new_listing') }}" class="link-farm">Yeni ilan açın</a>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

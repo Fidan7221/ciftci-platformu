@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% block title %}{{ "Kategoriyi Düzenle" if category else "Yeni Kategori" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card border-0 shadow-sm"><div class="card-body p-4">
+        <h1 class="h4 fw-bold mb-4">{{ "Kategoriyi düzenle" if category else "Yeni kategori" }}</h1>
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {{ render_field(form.name, placeholder="Örn. Kuru Meyve") }}
+          {{ render_field(form.slug, placeholder="kuru-meyve",
+                          help="Boş bırakırsanız addan otomatik üretilir.") }}
+          {{ render_field(form.parent_id) }}
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-secondary">Vazgeç</a>
+            {{ form.submit(class="btn btn-farm px-4") }}
+          </div>
+        </form>
+      </div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

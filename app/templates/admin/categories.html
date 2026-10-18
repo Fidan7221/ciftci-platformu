@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Kategoriler{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-diagram-3 text-farm"></i> Kategori Yönetimi</h1>
+    <a href="{{ url_for('admin.new_category') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Yeni kategori</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Kategori</th><th>URL adı</th><th class="text-center">Ürün</th><th class="text-end">İşlem</th></tr>
+        </thead>
+        <tbody>
+          {% for parent, children in tree %}
+            {% for category in [parent] + children %}
+              {% set is_child = category.parent_id is not none %}
+              <tr class="{{ 'table-group-start' if not is_child }}">
+                <td>
+                  {% if is_child %}<span class="text-muted ms-3 me-1">└</span>{% endif %}
+                  <span class="{{ 'fw-semibold' if not is_child }}">{{ category.name }}</span>
+                </td>
+                <td><code>{{ category.slug }}</code></td>
+                <td class="text-center">{{ category.products|length }}</td>
+                <td class="text-end">
+                  <a href="{{ url_for('admin.edit_category', category_id=category.id) }}"
+                     class="btn btn-sm btn-outline-secondary" aria-label="Düzenle"><i class="bi bi-pencil"></i></a>
+                  <form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}"
+                        class="d-inline" onsubmit="return confirm('Bu kategori silinsin mi?');">
+                    {{ delete_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Sil"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Kategori yok. Terminalde <code>flask seed-db</code> çalıştırabilirsiniz.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

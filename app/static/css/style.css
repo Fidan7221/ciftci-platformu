@@ -1,0 +1,144 @@
+/* Tarladan Sofraya – ortak stiller */
+:root {
+  --farm: #2f7d32;
+  --farm-dark: #1f5a23;
+  --farm-soft: #eef6ec;
+  --earth: #a0703c;
+}
+
+body { background: #f6f8f4; }
+
+/* Renk yardımcıları */
+.bg-farm   { background-color: var(--farm) !important; }
+.text-farm { color: var(--farm) !important; }
+.link-farm { color: var(--farm); font-weight: 600; text-decoration: none; }
+.link-farm:hover { text-decoration: underline; }
+
+.btn-farm {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--farm);
+  --bs-btn-border-color: var(--farm);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--farm-dark);
+  --bs-btn-hover-border-color: var(--farm-dark);
+  --bs-btn-active-bg: var(--farm-dark);
+}
+
+/* Giriş / kayıt kartları */
+.auth-card { border-radius: 1rem; }
+.auth-side {
+  background: linear-gradient(160deg, var(--farm) 0%, var(--farm-dark) 70%, var(--earth) 140%);
+}
+
+/* Hesap türü kartları */
+.role-card {
+  border: 2px solid #dee2e6;
+  border-radius: .75rem;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.role-card:hover { border-color: var(--farm); }
+.btn-check:checked + .role-card {
+  border-color: var(--farm);
+  background: var(--farm-soft);
+  box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .15);
+  color: inherit;
+}
+.btn-check:checked + .role-card i { color: var(--farm); }
+
+.producer-box { background: var(--farm-soft); border: 1px dashed var(--farm); }
+
+/* Ana sayfa */
+.hero { background: linear-gradient(180deg, var(--farm-soft), transparent); }
+.hero-icon { font-size: 11rem; color: var(--farm); opacity: .85; }
+
+.stat-card { border: 0; border-left: 4px solid var(--farm); }
+
+/* Odak halkası marka rengiyle */
+.form-control:focus, .form-check-input:focus {
+  border-color: var(--farm);
+  box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .2);
+}
+.form-check-input:checked { background-color: var(--farm); border-color: var(--farm); }
+
+/* --- Hafta 6: ürün kartları ve görseller --- */
+.product-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--farm-soft);
+}
+.product-thumb-sm {
+  width: 52px;
+  height: 52px;
+  border-radius: .5rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--farm-soft);
+}
+.product-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--farm);
+  font-size: 2rem;
+}
+.product-thumb-sm.product-thumb-empty { font-size: 1.25rem; }
+.product-card { transition: transform .15s, box-shadow .15s; overflow: hidden; }
+.product-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08) !important; }
+.product-card.is-archived { opacity: .6; }
+.image-preview img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+
+.stat-warn { border-left-color: #d97706; }
+.table-group-start td { border-top: 2px solid #dee2e6; }
+
+/* --- Hafta 7: sepet ve sipariş --- */
+.cart-problem { background: #fff8e6; }
+
+.order-steps {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+.order-steps li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  position: relative;
+  color: #6c757d;
+  text-align: center;
+}
+.order-steps li:not(:first-child)::before {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  right: 50%;
+  width: 100%;
+  height: 3px;
+  background: #dee2e6;
+  z-index: 0;
+}
+.order-steps li.done { color: var(--farm-dark); font-weight: 600; }
+.order-steps li.done:not(:first-child)::before { background: var(--farm); }
+.order-step-dot {
+  position: relative;
+  z-index: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 3px solid #dee2e6;
+  font-size: .85rem;
+}
+.order-steps li.done .order-step-dot { background: var(--farm); border-color: var(--farm); color: #fff; }
+
+.nav-pills .nav-link.active { background-color: var(--farm); }
+.nav-pills .nav-link { color: var(--farm-dark); }
+.form-select:focus { border-color: var(--farm); box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .2); }

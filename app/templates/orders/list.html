@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_pagination %}
+{% block title %}Siparişlerim{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold mb-3"><i class="bi bi-bag-check text-farm"></i> Siparişlerim</h1>
+
+  {% if pagination.items %}
+    <div class="list-group shadow-sm">
+      {% for order in pagination.items %}
+        <a href="{{ url_for('orders.detail', order_id=order.id) }}" class="list-group-item list-group-item-action py-3">
+          <div class="d-flex flex-wrap justify-content-between gap-2">
+            <div>
+              <span class="fw-semibold">Sipariş #{{ order.id }}</span>
+              <span class="small text-muted ms-2">{{ order.created_at|datetime_tr }}</span>
+              <div class="small text-muted">
+                {% if order.producer %}<i class="bi bi-tree"></i> {{ order.producer.farm_name }} · {% endif %}
+                {{ order.items|length }} kalem
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold">{{ order.total_amount|money }}</div>
+              <span class="badge {{ order.status_badge }}">{{ order.status_label }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+    {{ render_pagination(pagination, "orders.my_orders") }}
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-bag display-5 d-block mb-2"></i>
+      Henüz siparişiniz yok. <a href="{{ url_for('market.index') }}" class="link-farm">Pazara göz atın</a>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

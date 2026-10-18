@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_image %}
+{% block title %}{{ listing.title }}{% endblock %}
+
+{% block content %}
+{% set product = listing.product %}
+{% set producer = product.producer %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('market.index') }}" class="link-farm">Pazar</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('market.index', kategori=product.category_id) }}" class="link-farm">{{ product.category.name }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ listing.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="rounded-4 overflow-hidden shadow-sm">{{ product_image(product, "product-thumb") }}</div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="d-flex gap-2 mb-2">
+        <span class="badge {{ 'text-bg-success' if listing.is_available else 'text-bg-secondary' }}">
+          {{ "Satışta" if listing.is_available else listing.status_label }}
+        </span>
+        {% if product.is_organic %}<span class="badge text-bg-light border text-success">Organik</span>{% endif %}
+      </div>
+      <h1 class="h2 fw-bold">{{ listing.title }}</h1>
+      <p class="fs-3 fw-bold text-farm mb-1">{{ listing.price|money }} <span class="fs-6 text-muted fw-normal">/ {{ product.unit }}</span></p>
+      <p class="small text-muted">
+        Stokta {{ listing.stock_quantity|qty }} {{ product.unit }} ·
+        En az {{ listing.min_order_quantity|qty }} {{ product.unit }}
+        {% if listing.end_date %} · Son gün {{ listing.end_date|date_tr }}{% endif %}
+      </p>
+
+      {% if product.description %}<p>{{ product.description }}</p>{% endif %}
+
+      <div class="card border-0 bg-light mb-4">
+        <div class="card-body d-flex align-items-center gap-3">
+          <i class="bi bi-tree fs-2 text-farm"></i>
+          <div>
+            <div class="fw-semibold">{{ producer.farm_name }}
+              {% if producer.is_verified %}<i class="bi bi-patch-check-fill text-success" title="Doğrulanmış üretici"></i>{% endif %}
+            </div>
+            <div class="small text-muted">{{ producer.region }} · Puan {{ "%.1f"|format(producer.reputation_score) }} ({{ producer.review_count }})</div>
+          </div>
+        </div>
+      </div>
+
+      {% if not listing.is_available %}
+        <div class="alert alert-secondary">Bu ilan şu anda satışta değil.
+          {% if current_user.is_authenticated and current_user.is_producer and current_user.producer_profile == producer %}
+            <a href="{{ url_for('producer.edit_listing', listing_id=listing.id) }}" class="alert-link">İlanı düzenle</a>
+          {% endif %}
+        </div>
+      {% elif current_user.is_authenticated and current_user.is_customer %}
+        <form method="post" action="{{ url_for('cart.add', listing_id=listing.id) }}" class="row g-2 align-items-end" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="col-6 col-md-4">
+            {{ form.quantity.label(class="form-label fw-medium") }}
+            <div class="input-group">
+              {{ form.quantity(class="form-control", type="number", step=("1" if product.unit in ("adet", "kasa", "demet") else "0.5"),
+                               min=listing.min_order_quantity, max=listing.stock_quantity) }}
+              <span class="input-group-text">{{ product.unit }}</span>
+            </div>
+          </div>
+          <div class="col-6 col-md-5 d-grid">
+            <button type="submit" class="btn btn-farm py-2 fw-semibold"><i class="bi bi-cart-plus"></i> Sepete ekle</button>
+          </div>
+        </form>
+      {% elif current_user.is_authenticated and current_user.is_producer and current_user.producer_profile == producer %}
+        <div class="alert alert-light border small d-flex justify-content-between align-items-center mb-0">
+          <span><i class="bi bi-info-circle"></i> Bu sizin ilanınız.</span>
+          <a href="{{ url_for('producer.edit_listing', listing_id=listing.id) }}" class="btn btn-sm btn-outline-secondary">İlanı düzenle</a>
+        </div>
+      {% elif current_user.is_authenticated %}
+        <div class="alert alert-light border small mb-0">Satın almak için müşteri hesabıyla giriş yapmalısınız.</div>
+      {% else %}
+        <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-farm py-2 px-4">
+          <i class="bi bi-box-arrow-in-right"></i> Sepete eklemek için giriş yapın
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
