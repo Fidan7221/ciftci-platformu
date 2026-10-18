@@ -12,7 +12,7 @@ sipariş aynı son ürünü satın alamaz (race condition önlenir).
 from sqlalchemy import case, func, update
 
 from app.extensions import db
-from app.models import Listing, ListingStatus, Order, OrderItem, Product
+from app.models import Listing, ListingStatus, Order, OrderItem, OrderStatus, Product
 from app.repositories.base_repository import BaseRepository
 
 # Oturumdaki nesneleri Python tarafında senkronlamaya çalışma; commit sonrası zaten yenilenir
@@ -39,6 +39,12 @@ class OrderRepository(BaseRepository):
         if status:
             stmt = stmt.where(Order.status == status)
         return db.paginate(stmt, page=page, per_page=per_page, error_out=False)
+
+    @staticmethod
+    def pending_created_before(cutoff):
+        return db.session.execute(
+            db.select(Order).where(Order.status == OrderStatus.PENDING, Order.created_at < cutoff)
+        ).scalars().all()
 
     @staticmethod
     def producer_has_items(order_id, producer_id):

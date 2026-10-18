@@ -1,4 +1,4 @@
-"""Sipariş iş mantığı (Hafta 7): sepeti siparişe dönüştürme ve durum yönetimi.
+"""Sipariş iş mantığı (Hafta 7, Hafta 9'da ödeme ile birleşti): sepeti siparişe dönüştürme ve durum yönetimi.
 
 1) SİPARİŞ OLUŞTURMA TEK BİR TRANSACTION'DIR
    Stok düşürme, sipariş ve kalemleri yazma, sepeti boşaltma ya HEP BİRLİKTE
@@ -14,28 +14,31 @@
    değişse bile sipariş tutarı değişmez.
 
 4) DURUM MAKİNESİ (kim, hangi durumdan hangisine geçebilir)
-   pending  -> paid       : üretici / yönetici  (Hafta 9'da ödeme API'si otomatik yapacak)
-   pending  -> cancelled  : müşteri / üretici / yönetici
+   pending  -> paid       : ÖDEME SERVİSİ (kartla ödeme başarılı olunca, payment_service)
+                            veya yönetici (havale / kapıda ödeme elle onayı)
+   pending  -> cancelled  : müşteri / üretici / yönetici; ödenmeyen sipariş süre dolunca sistem
    paid     -> shipped    : üretici / yönetici
-   paid     -> cancelled  : üretici / yönetici  (Hafta 9'da iade tetiklenecek)
+   paid     -> cancelled  : üretici / yönetici — önce ödeme sağlayıcısından İADE alınır
    shipped  -> delivered  : müşteri / yönetici
    delivered, cancelled   : son durumlar, değiştirilemez
 """
+from datetime import timedelta
 from decimal import Decimal
 
 from flask import current_app
 
-from app.models import Order, OrderItem, OrderStatus
+from app.models import Order, OrderItem, OrderStatus, PaymentStatus
+from app.models.base import utcnow
 from app.repositories.cart_repository import CartRepository
 from app.repositories.order_repository import OrderRepository
-from app.services import cart_service
+from app.services import cart_service, payment_service
 from app.services.errors import ServiceError
 
 CUSTOMER, PRODUCER, ADMIN = "customer", "producer", "admin"
 
 TRANSITIONS = {
     OrderStatus.PENDING: {
-        OrderStatus.PAID: {PRODUCER, ADMIN},
+        OrderStatus.PAID: {ADMIN},  # Hafta 9: üretici artık elle "ödendi" yapamaz; ödeme sağlayıcısı yapar
         OrderStatus.CANCELLED: {CUSTOMER, PRODUCER, ADMIN},
     },
     OrderStatus.PAID: {
@@ -49,11 +52,12 @@ TRANSITIONS = {
 
 # Düğme metni, Bootstrap sınıfı ve onay sorusu
 ACTIONS = {
-    OrderStatus.PAID: ("Ödemeyi onayla", "btn-info", "Ödemenin alındığını onaylıyor musunuz?"),
+    OrderStatus.PAID: ("Ödemeyi elle onayla (havale / kapıda)", "btn-outline-info",
+                       "Ödemenin sağlayıcı dışında alındığını onaylıyor musunuz?"),
     OrderStatus.SHIPPED: ("Kargoya verildi", "btn-primary", "Sipariş kargoya verildi mi?"),
     OrderStatus.DELIVERED: ("Teslim aldım", "btn-success", "Siparişi teslim aldığınızı onaylıyor musunuz?"),
     OrderStatus.CANCELLED: ("Siparişi iptal et", "btn-outline-danger",
-                            "Sipariş iptal edilecek ve stoklar geri eklenecek. Emin misiniz?"),
+                            "Sipariş iptal edilecek, stoklar geri eklenecek; ödendiyse ücret iade edilecek. Emin misiniz?"),
 }
 
 
@@ -174,16 +178,51 @@ def change_status(order, user, new_status):
             f"'{OrderStatus.LABELS.get(new_status, new_status)}' durumuna geçirilemez."
         )
 
+    _apply_transition(order, current, new_status)
+    return order
+
+
+def _apply_transition(order, current, new_status):
+    """Durum geçişini ve yan etkilerini (iade, stok iadesi, elle ödeme kaydı) tek transaction'da uygular."""
+    payment = order.payment
+    if new_status == OrderStatus.CANCELLED and payment is not None \
+            and payment.status == PaymentStatus.INITIATED:
+        # Zaman aşımına uğramış bir ödemenin sonucu belli değil; iptal edersek çekilmiş para kaybolabilir
+        raise ServiceError("Bu siparişin ödeme sonucu henüz kesinleşmedi. Lütfen önce ödemeyi tekrar deneyin.")
+
     try:
+        if new_status == OrderStatus.CANCELLED:
+            # 1) Ödenmişse önce iade (başarısızsa ServiceError -> sipariş iptal edilmez)
+            payment_service.refund_order_payment(order)
         if not OrderRepository.transition_status(order.id, current, new_status):
             raise ServiceError("Sipariş bu sırada başka biri tarafından güncellendi. Sayfayı yenileyin.")
         if new_status == OrderStatus.CANCELLED:
-            for item in order.items:
+            for item in order.items:  # 2) Stokları geri ekle
                 OrderRepository.restore_stock(item.listing_id, item.listing.product_id, item.quantity)
+        if new_status == OrderStatus.PAID:
+            payment_service.record_manual_payment(order)  # Yönetici elle onayladı
         OrderRepository.commit()
     except Exception:
         OrderRepository.rollback()
         raise
 
     OrderRepository.expire(order)  # Nesne veri tabanındaki yeni durumu okusun
-    return order
+
+
+def cancel_unpaid_orders(older_than_hours):
+    """Belirtilen süreden uzun süredir ödenmemiş siparişleri iptal eder ve stokları serbest bırakır.
+
+    Sonucu belirsiz (initiated) ödemesi olan siparişlere dokunulmaz. Kaç sipariş iptal edildiğini döndürür.
+    Komut: flask cancel-unpaid
+    """
+    cutoff = utcnow() - timedelta(hours=older_than_hours)
+    cancelled = 0
+    for order in OrderRepository.pending_created_before(cutoff):
+        if order.payment is not None and order.payment.status == PaymentStatus.INITIATED:
+            continue
+        try:
+            _apply_transition(order, OrderStatus.PENDING, OrderStatus.CANCELLED)
+            cancelled += 1
+        except ServiceError as error:
+            current_app.logger.warning("Sipariş #%s otomatik iptal edilemedi: %s", order.id, error.message)
+    return cancelled

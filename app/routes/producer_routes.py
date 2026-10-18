@@ -10,7 +10,7 @@ from flask_login import current_user
 from app.forms.listing_forms import ListingForm, ToggleForm
 from app.forms.producer_forms import DeleteForm, ProducerProfileForm, ProductForm
 from app.models import ListingStatus, OrderStatus, RoleName
-from app.services import category_service, listing_service, order_service, producer_service
+from app.services import category_service, listing_service, order_service, price_service, producer_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 from app.utils.forms import show_service_error
@@ -270,9 +270,17 @@ def toggle_listing(listing_id):
 
 
 def _remaining_by_product(profile, exclude_listing_id=None):
-    """Formdaki ipucu: her ürün için ilana ayrılabilecek miktar."""
-    return {p.id: (listing_service.remaining_stock_for(p, exclude_listing_id), p.unit)
-            for p in profile.products if p.is_active}
+    """Formdaki ipucu: her ürün için ilana ayrılabilecek miktar ve (Hafta 9) güncel hal ortalaması."""
+    hints = {}
+    for p in profile.products:
+        if not p.is_active:
+            continue
+        reference = price_service.reference_price_for(p)
+        hal = None
+        if reference is not None and reference.unit == p.unit:
+            hal = (reference.avg_price, reference.price_date)
+        hints[p.id] = (listing_service.remaining_stock_for(p, exclude_listing_id), p.unit, hal)
+    return hints
 
 
 # --- Gelen siparişler (Hafta 7) ----------------------------------------------------

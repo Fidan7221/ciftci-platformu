@@ -9,8 +9,9 @@ import pytest
 from sqlalchemy import update
 
 from app.extensions import db
-from app.models import CartItem, Listing, ListingStatus, Order, OrderItem, OrderStatus, Product
-from app.services import cart_service, order_service
+from app.models import CartItem, Listing, ListingStatus, Order, OrderItem, OrderStatus, PaymentStatus, Product
+from app.integrations.payment_gateway import CardDetails
+from app.services import cart_service, order_service, payment_service
 from app.services.errors import ServiceError
 from tests.conftest import login, make_customer, make_listing, make_producer, make_product
 
@@ -30,6 +31,12 @@ def prepare(quantity_in_cart="10", listing_qty="50", product_stock="100", price=
     customer = make_customer("musteri@test.com")
     cart_service.add_to_cart(customer, listing.id, Decimal(quantity_in_cart))
     return profile, product, listing, customer
+
+
+def pay(order, customer, card_number="4111111111111111"):
+    """Hafta 9: sipariş artık ödeme servisinden (test kartıyla) geçerek 'ödendi' olur."""
+    card = CardDetails(holder="Test Kişi", number=card_number, exp_month=12, exp_year=2099, cvc="123")
+    return payment_service.pay_order(order, customer, card)
 
 
 def set_status(client, order_id, status):
@@ -154,13 +161,13 @@ def test_empty_cart_and_short_address(client):
 # --- Durum yönetimi ---------------------------------------------------------------
 
 def test_full_lifecycle(client):
-    prepare()
+    _, _, _, customer = prepare()
     login(client, "musteri@test.com")
     checkout(client)
     order = Order.query.one()
+    pay(order, customer)  # Hafta 9: "ödendi" durumunu ödeme servisi verir
 
     login(client, "ciftci@test.com")
-    set_status(client, order.id, OrderStatus.PAID)
     set_status(client, order.id, OrderStatus.SHIPPED)
     db.session.refresh(order)
     assert order.status == OrderStatus.SHIPPED
@@ -181,6 +188,7 @@ def test_invalid_transitions_rejected(client):
     assert "geçirilemez" in page
 
     login(client, "ciftci@test.com")
+    set_status(client, order.id, OrderStatus.PAID)      # Hafta 9: üretici elle "ödendi" yapamaz
     set_status(client, order.id, OrderStatus.SHIPPED)   # ödenmeden kargolanamaz
     set_status(client, order.id, OrderStatus.DELIVERED)  # teslimi üretici onaylayamaz
     db.session.refresh(order)
@@ -207,9 +215,7 @@ def test_cancel_restores_stock_and_reopens_listing(client):
 def test_customer_cannot_cancel_after_payment_and_no_double_cancel(client):
     _, product, _, customer = prepare(quantity_in_cart="10")
     order = order_service.place_order(customer, ADDRESS)[0]
-
-    login(client, "ciftci@test.com")
-    set_status(client, order.id, OrderStatus.PAID)
+    pay(order, customer)
 
     login(client, "musteri@test.com")
     set_status(client, order.id, OrderStatus.CANCELLED)
@@ -220,7 +226,9 @@ def test_customer_cannot_cancel_after_payment_and_no_double_cancel(client):
     set_status(client, order.id, OrderStatus.CANCELLED)  # üretici iptal edebilir
     set_status(client, order.id, OrderStatus.CANCELLED)  # ikinci iptal reddedilir
     db.session.refresh(product)
+    db.session.refresh(order)
     assert product.stock_quantity == Decimal("100")       # stok yalnızca BİR kez geri eklendi
+    assert order.payment.status == PaymentStatus.REFUNDED  # Hafta 9: ödenmiş sipariş iptalinde iade
 
 
 def test_order_visibility(client):

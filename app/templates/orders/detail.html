@@ -36,7 +36,8 @@
       {% endfor %}
     </ol>
   {% else %}
-    <div class="alert alert-secondary"><i class="bi bi-x-circle"></i> Bu sipariş iptal edildi; stoklar geri eklendi.</div>
+    <div class="alert alert-secondary"><i class="bi bi-x-circle"></i> Bu sipariş iptal edildi; stoklar geri eklendi.
+      {% if order.payment and order.payment.status == "refunded" %} Ödenen tutar iade edildi.{% endif %}</div>
   {% endif %}
 
   <div class="row g-4">
@@ -75,6 +76,32 @@
         <div class="small">{{ order.customer.full_name }}{% if order.customer.phone %} · {{ order.customer.phone }}{% endif %}</div>
         <div class="small text-muted">{{ order.shipping_address }}</div>
         {% if order.note %}<div class="small mt-2"><span class="fw-semibold">Not:</span> {{ order.note }}</div>{% endif %}
+      </div></div>
+
+      <!-- Ödeme (Hafta 9) -->
+      <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+        <h2 class="h6 fw-semibold d-flex justify-content-between align-items-center">
+          <span>Ödeme</span>
+          {% if order.payment %}<span class="badge {{ order.payment.status_badge }}">{{ order.payment.status_label }}</span>{% endif %}
+        </h2>
+        {% if order.payment %}
+          {% set pay = order.payment %}
+          <div class="small text-muted">
+            {% if pay.provider == "manual" %}Elle onaylandı (havale / kapıda ödeme)
+            {% else %}Kart{% if pay.card_last4 %} **** {{ pay.card_last4 }}{% endif %} · {{ pay.attempt_count }} deneme{% endif %}
+            {% if pay.paid_at %}<br>Ödeme: {{ pay.paid_at|datetime_tr }}{% endif %}
+            {% if pay.refunded_at %}<br>İade: {{ pay.refunded_at|datetime_tr }}{% endif %}
+            {% if pay.transaction_ref and actor != "customer" %}<br>İşlem no: <code>{{ pay.transaction_ref }}</code>{% endif %}
+            {% if pay.status in ("failed", "initiated") and pay.error_message %}<br><span class="text-danger">{{ pay.error_message }}</span>{% endif %}
+          </div>
+        {% else %}
+          <div class="small text-muted">Henüz ödeme yapılmadı.</div>
+        {% endif %}
+        {% if actor == "customer" and order.status == "pending" %}
+          <a href="{{ url_for('payments.pay', order_id=order.id) }}" class="btn btn-farm w-100 mt-3 fw-semibold">
+            <i class="bi bi-credit-card"></i> {{ order.total_amount|money }} öde
+          </a>
+        {% endif %}
       </div></div>
 
       {% if actions %}

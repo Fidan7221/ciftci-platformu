@@ -58,14 +58,20 @@
   (function () {
     const remaining = {
       {% for product_id, info in remaining.items() %}
-        "{{ product_id }}": "{{ info[0]|qty }} {{ info[1] }}",
+        "{{ product_id }}": {
+          stock: "{{ info[0]|qty }} {{ info[1] }}",
+          hal: {% if info[2] %}"{{ info[2][0]|money }} / {{ info[1] }} ({{ info[2][1]|date_tr }})"{% else %}null{% endif %}
+        },
       {% endfor %}
     };
     const select = document.getElementById("product_id");
     const hint = document.getElementById("remaining-hint");
     function update() {
       const value = remaining[select.value];
-      hint.textContent = value ? "Bu ürün için ilana ayrılabilecek en fazla miktar: " + value : "";
+      if (!value) { hint.textContent = ""; return; }
+      let text = "İlana ayrılabilecek en fazla miktar: " + value.stock;
+      if (value.hal) { text += " · Güncel hal ortalaması: " + value.hal; }
+      hint.textContent = text;
     }
     select.addEventListener("change", update);
     update();

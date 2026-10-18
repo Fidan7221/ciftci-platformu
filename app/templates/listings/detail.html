@@ -34,6 +34,18 @@
         {% if listing.end_date %} · Son gün {{ listing.end_date|date_tr }}{% endif %}
       </p>
 
+      {% if comparison %}
+        {% set diff = comparison.diff_percent %}
+        <div class="small mb-3 p-2 rounded-3 bg-light border">
+          <i class="bi bi-graph-up-arrow text-farm"></i>
+          Hal ortalaması ({{ comparison.reference.price_date|date_tr }}): <strong>{{ comparison.reference.avg_price|money }}</strong> / {{ comparison.reference.unit }}
+          {% if diff > 0 %}· bu ilan %{{ diff|qty }} üzerinde
+          {% elif diff < 0 %}· bu ilan <span class="text-success fw-semibold">%{{ (-diff)|qty }} altında</span>
+          {% else %}· hal ortalamasıyla aynı{% endif %}
+          <div class="text-muted mt-1">Toptan hal fiyatı; doğrudan satışta tazelik ve aracısızlık fiyata yansıyabilir.</div>
+        </div>
+      {% endif %}
+
       {% if product.description %}<p>{{ product.description }}</p>{% endif %}
 
       <div class="card border-0 bg-light mb-4">

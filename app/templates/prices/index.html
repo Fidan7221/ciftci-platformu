@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Hal Fiyatları{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div>
+      <h1 class="h3 fw-bold mb-1"><i class="bi bi-graph-up-arrow text-farm"></i> Hal Fiyatları</h1>
+      <p class="text-muted mb-0 small">
+        {% if board.date %}{{ board.date|date_tr }} tarihli toptan fiyatlar (TL).{% else %}Henüz fiyat verisi yok.{% endif %}
+        {% if info.mock %}<span class="badge text-bg-warning ms-1">Test verisi</span>{% endif %}
+      </p>
+    </div>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <form method="post" action="{{ url_for('prices.sync') }}">
+        {{ sync_form.hidden_tag() }}
+        <button type="submit" class="btn btn-farm"><i class="bi bi-arrow-repeat"></i> Fiyatları şimdi güncelle</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <form method="get" class="mb-3" role="search" style="max-width: 24rem;">
+    <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input type="search" name="q" value="{{ search }}" class="form-control" placeholder="Ürün ara">
+    </div>
+  </form>
+
+  {% if board.rows %}
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Ürün</th><th class="text-end">En düşük</th><th class="text-end">Ortalama</th>
+                <th class="text-end">En yüksek</th><th class="text-end">Değişim</th></tr>
+          </thead>
+          <tbody>
+            {% for row in board.rows %}
+              {% set p = row.price %}
+              <tr>
+                <td class="fw-medium">{{ p.product_name }} <span class="small text-muted">/ {{ p.unit }}</span></td>
+                <td class="text-end">{{ p.min_price|money }}</td>
+                <td class="text-end fw-semibold">{{ p.avg_price|money }}</td>
+                <td class="text-end">{{ p.max_price|money }}</td>
+                <td class="text-end text-nowrap">
+                  {% if row.change is none %}<span class="text-muted">—</span>
+                  {% elif row.change > 0 %}<span class="text-danger"><i class="bi bi-caret-up-fill"></i> %{{ row.change|qty }}</span>
+                  {% elif row.change < 0 %}<span class="text-success"><i class="bi bi-caret-down-fill"></i> %{{ (-row.change)|qty }}</span>
+                  {% else %}<span class="text-muted">%0</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="small text-muted mt-2 mb-0">Değişim, ürünün bir önceki kayıtlı gününe göre ortalama fiyattaki farktır.
+      Bu fiyatlar üreticilere ilan fiyatı belirlerken referans olarak gösterilir.</p>
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-graph-up display-5 d-block mb-2"></i>
+      {% if search %}Aramaya uyan ürün yok.{% else %}Fiyat verisi henüz çekilmedi. Terminalde <code>flask fetch-prices --days 30</code> çalıştırın.{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

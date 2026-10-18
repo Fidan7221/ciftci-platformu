@@ -2,6 +2,26 @@
 
 Sürüm numaraları [Semantic Versioning](https://semver.org/lang/tr/) kuralına uyar: `ANA.ARA.YAMA[-ön-sürüm]`.
 
+## [0.9.0] — 2026-10-19 · Harici API entegrasyonu
+
+### Eklendi
+- `app/integrations/`: ortak HTTP istemcisi (zaman aşımı, üstel beklemeli yeniden deneme, 429/Retry-After,
+  istemci tarafı hız sınırı, anahtarın loglanmaması), hal fiyatı sağlayıcıları (sahte + HTTP adaptörü),
+  ödeme sağlayıcıları (test kartlı sahte sağlayıcı + HMAC imzalı HTTP adaptörü, idempotency anahtarı).
+- Ödeme sayfası (`/odeme/siparis/<id>`): Luhn ve son kullanma kontrolü, kart numarası saklanmaz (yalnızca son 4 hane),
+  kullanıcı başına deneme sınırı (429).
+- Ödenmiş siparişin iptalinde otomatik iade; iade başarısızsa sipariş iptal edilmez.
+- Hal fiyatları sayfası (`/fiyatlar`), yönetici için "şimdi güncelle" düğmesi; ilan detayında ve ilan formunda
+  hal ortalaması karşılaştırması.
+- Komutlar: `flask fetch-prices`, `flask cancel-unpaid`. `seed-demo` artık 30 günlük fiyat da ekler.
+- `.env.example` harici API değişkenleriyle güncellendi.
+- Testler: `test_integrations.py` (23), `test_payments.py` (21), `test_prices.py` (12) — toplam 151.
+
+### Değişti
+- Sipariş "ödendi" durumuna artık üretici elle geçiremez; ödeme sağlayıcısı (veya yönetici, havale için) geçirir.
+- Tek üreticili siparişte sepet onayından sonra doğrudan ödeme sayfasına gidilir.
+- `payments` tablosuna `idempotency_key`, `attempt_count`, `card_last4`, `refund_ref`, `refunded_at` eklendi (migration).
+
 ## [0.8.0-vize] — 2026-10-19 · Vize ara sürümü
 
 ### Hafta 8 — Entegrasyon ve düzeltmeler

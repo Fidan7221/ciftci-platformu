@@ -1,11 +1,12 @@
-# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 8 / Vize)
+# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 9)
 
 **Kullanılan araç:** Claude (Anthropic), claude.ai sohbet arayüzü
 **Kullanım biçimi:** Her hafta için gereksinimler istem olarak verildi; yapay zekâ kod, test ve açıklama üretti.
 Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırıldı.
 
 > Not: Yapay zekânın çalıştığı ortamda paket deposuna erişim kapalıydı; bu yüzden üretilen kodu orada
-> çalıştıramadı, yalnızca sözdizimi ve statik analiz kontrolü yaptı. Tüm "geçti" sonuçları benim
+> çoğunlukla çalıştıramadı, sözdizimi ve statik analiz kontrolü yaptı. (Hafta 9'da harici API katmanının
+> 23 testi, eksik eklentiler taklit edilerek orada da çalıştırıldı.) Tüm "geçti" sonuçları benim
 > bilgisayarımdaki `pytest` çıktısıdır.
 >
 > `[ ]` ile işaretli alanları kendi deneyiminize göre doldurun. Hoca bu bölümde sizin ne
@@ -20,6 +21,7 @@ Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırı
 | 19.10.2026 | 6 | Üretici profili, ürün CRUD, görsel | Ürün/kategori servisleri, görsel imza kontrolü, sayfalama, 28 test | Ürün tablosuna stok alanı eklenmesi önerisini kabul ettim (migration). [ ] | 44 test geçti |
 | 19.10.2026 | 7 | İlan, sepet, sipariş, transaction | Koşullu UPDATE ile stok düşürme, durum makinesi, sepetin üreticiye göre bölünmesi, 37 test | İki stok kuralını (aktif ilanlar ≤ ürün stoğu) kabul ettim. [ ] | Entegre edildi [test sayısını yazın] |
 | 19.10.2026 | 8 | Vize: entegrasyon, düzeltme, belge | Entegrasyon taraması, 6 düzeltme, demo verisi, 14 entegrasyon testi, rapor ve sözlü hazırlık | [ ] | [ ] / 95 test |
+| 19.10.2026 | 9 | Fiyat ve ödeme API entegrasyonu | Ortak HTTP istemcisi (timeout, retry, 429, hız sınırı), sahte/HTTP fiyat ve ödeme sağlayıcıları, idempotency, HMAC imzası, iade akışı, 56 test | [ ] | [ ] / 151 test |
 
 ## Yapay zekânın hataları ve nasıl yakalandığı
 
@@ -33,6 +35,7 @@ bir kısmı ise teslim edilen koda girdi ve Hafta 8 entegrasyon taramasında bul
 | 7 | `current_user` (bir vekil/LocalProxy nesnesi) doğrudan `Order(customer=...)` ilişkisine veriliyordu; SQLAlchemy gerçek nesne bekler | Teslim öncesi kontrol (yapay zekâ) | `_get_current_object()` ile gerçek nesne veriliyor (`_me()` yardımcısı) |
 | 7 | Menü yenilenirken üreticinin "Profilim" bağlantısı kaldırılmıştı | Teslim edilen koddaydı; Hafta 8 entegrasyon taramasında bulundu | Kullanıcı açılır menüsüne eklendi |
 | 7 | Saatler UTC gösteriliyordu | Teslim edilen koddaydı; Hafta 8 entegrasyon taramasında bulundu | `datetime_tr` filtresi UTC+3'e çeviriyor + test |
+| 9 | Test dosyasında `db.update` kullanılmıştı; Flask-SQLAlchemy'nin bunu sağladığı kesin değildi | Teslim öncesi kontrol (yapay zekâ) | `sqlalchemy.update` doğrudan içe aktarıldı |
 | [ ] | [Kendi bulduğunuz hatalar] | [ ] | [ ] |
 
 ## Öğrendiklerim / yapay zekânın sınırları

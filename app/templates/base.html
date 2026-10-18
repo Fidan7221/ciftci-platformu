@@ -35,6 +35,7 @@
       <div class="collapse navbar-collapse" id="mainNav">
         <ul class="navbar-nav me-auto">
           {{ nav_item("market.index", "Pazar", "shop", "market.") }}
+          {{ nav_item("prices.index", "Hal Fiyatları", "graph-up-arrow", "prices.") }}
           {% if current_user.is_authenticated and current_user.is_producer %}
             {{ nav_item("producer.products", "Ürünlerim", "box-seam") }}
             {{ nav_item("producer.listings", "İlanlarım", "megaphone") }}

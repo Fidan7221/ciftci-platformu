@@ -89,6 +89,11 @@ def seed_demo():
     _get_or_register(ADMIN["email"], lambda: auth_service.create_admin_user(
         ADMIN["full_name"], ADMIN["email"], DEMO_PASSWORD))
 
+    # Hafta 9: son 30 günün hal fiyatları (sahte sağlayıcıdan; ilan formunda ve detayda referans olur)
+    from app.services import price_service
+    if price_service.status()["count"] == 0:
+        price_service.backfill(30)
+
     return {
         "Üretici": PRODUCERS[0]["email"],
         "Arıcı": PRODUCERS[1]["email"],

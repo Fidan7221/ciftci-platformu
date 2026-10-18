@@ -88,16 +88,22 @@ def test_full_marketplace_journey(client):
     page = text(client.post("/sepet/onay", data={"shipping_address": ADDRESS, "note": "Hafta sonu",
                                                  "save_address": "y"}, follow_redirects=True))
     assert "Siparişiniz alındı" in page
+    assert "Kartla öde" in page  # Hafta 9: sipariş sonrası doğrudan ödeme sayfası
     order = Order.query.one()
     assert order.total_amount == Decimal("85.50") and order.status == OrderStatus.PENDING
     assert f"#{order.id}" in text(client.get("/siparisler/"))
     assert f"#{order.id}" in text(client.get("/musteri/panel"))
 
-    # 6) Üretici siparişi panelinde görür, ödemeyi onaylar ve kargolar
+    # 5b) Test kartıyla öder (Hafta 9)
+    page = text(client.post(f"/odeme/siparis/{order.id}", data={
+        "holder": "Zeynep Kaya", "card_number": "4111 1111 1111 1111", "expiry": "12/99", "cvc": "123",
+    }, follow_redirects=True))
+    assert "Ödemeniz alındı" in page and "**** 1111" in page
+
+    # 6) Üretici siparişi panelinde görür ve kargolar
     login(client, "ciftci@test.com")
     assert "İlgilenilecek sipariş" in text(client.get("/uretici/panel"))
     assert f"#{order.id}" in text(client.get("/uretici/siparisler"))
-    client.post(f"/siparisler/{order.id}/durum", data={"status": OrderStatus.PAID})
     client.post(f"/siparisler/{order.id}/durum", data={"status": OrderStatus.SHIPPED})
 
     # 7) Müşteri teslim aldığını onaylar
@@ -129,7 +135,7 @@ def test_every_page_opens_for_each_role(client, app):
     product = Product.query.filter_by(name="Salkım Domates").one()
     listing = Listing.query.filter_by(product_id=product.id).first()
 
-    public = ["/", "/pazar/", f"/pazar/ilan/{listing.id}", "/auth/login", "/auth/register"]
+    public = ["/", "/pazar/", f"/pazar/ilan/{listing.id}", "/fiyatlar/", "/auth/login", "/auth/register"]
     pages = {
         "ciftci@demo.com": ["/panel", "/uretici/panel", "/uretici/profil", "/uretici/urunler",
                             "/uretici/urunler/yeni", f"/uretici/urunler/{product.id}/duzenle",
@@ -145,7 +151,7 @@ def test_every_page_opens_for_each_role(client, app):
 
     for email, urls in pages.items():
         login(client, email, DEMO_PASSWORD)
-        for url in urls + public[:3]:
+        for url in urls + public[:4]:
             response = client.get(url, follow_redirects=True)
             assert response.status_code == 200, f"{email} -> {url}: {response.status_code}"
 

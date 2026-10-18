@@ -2,7 +2,7 @@
 from flask import Blueprint, abort, render_template, request
 
 from app.forms.cart_forms import AddToCartForm
-from app.services import category_service, listing_service
+from app.services import category_service, listing_service, price_service
 
 market_bp = Blueprint("market", __name__, url_prefix="/pazar")
 
@@ -28,4 +28,5 @@ def detail(listing_id):
     if listing is None:
         abort(404)
     form = AddToCartForm(quantity=listing.min_order_quantity)
-    return render_template("listings/detail.html", listing=listing, form=form)
+    return render_template("listings/detail.html", listing=listing, form=form,
+                           comparison=price_service.compare_listing(listing))  # Hafta 9: hal fiyatı karşılaştırması

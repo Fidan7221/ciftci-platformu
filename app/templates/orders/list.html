@@ -22,6 +22,7 @@
             <div class="text-end">
               <div class="fw-bold">{{ order.total_amount|money }}</div>
               <span class="badge {{ order.status_badge }}">{{ order.status_label }}</span>
+              {% if order.status == "pending" %}<div class="small link-farm mt-1">Ödemek için tıklayın →</div>{% endif %}
             </div>
           </div>
         </a>

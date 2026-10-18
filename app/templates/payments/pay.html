@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% block title %}Ödeme · Sipariş #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('orders.my_orders') }}" class="link-farm">Siparişlerim</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('orders.detail', order_id=order.id) }}" class="link-farm">Sipariş #{{ order.id }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Ödeme</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm"><div class="card-body p-4 p-md-5">
+        <h1 class="h4 fw-bold mb-1"><i class="bi bi-credit-card text-farm"></i> Kartla öde</h1>
+        <p class="text-muted small mb-4"><i class="bi bi-lock"></i>
+          Kart numaranız ve güvenlik kodunuz saklanmaz; yalnızca son 4 hane kayıt altına alınır.</p>
+
+        {% if payment and payment.status == "initiated" %}
+          <div class="alert alert-warning small">
+            <i class="bi bi-hourglass-split"></i> Önceki ödeme denemenizin sonucu kesinleşmedi.
+            Aynı kartla tekrar denediğinizde <strong>iki kez çekim yapılmaz</strong>.
+          </div>
+        {% elif payment and payment.status == "failed" %}
+          <div class="alert alert-danger small"><i class="bi bi-x-circle"></i> Son deneme başarısız: {{ payment.error_message }}</div>
+        {% endif %}
+
+        <form method="post" novalidate autocomplete="on">
+          {{ form.hidden_tag() }}
+          {{ render_field(form.holder, icon="person", autocomplete="cc-name", placeholder="AD SOYAD") }}
+          {{ render_field(form.card_number, icon="credit-card-2-front", autocomplete="cc-number",
+                          inputmode="numeric", placeholder="0000 0000 0000 0000", value="") }}
+          <div class="row">
+            <div class="col-6">{{ render_field(form.expiry, icon="calendar", autocomplete="cc-exp", placeholder="AA/YY", inputmode="numeric") }}</div>
+            <div class="col-6">{{ render_field(form.cvc, icon="shield-lock", autocomplete="cc-csc", inputmode="numeric", placeholder="123", value="") }}</div>
+          </div>
+          <button type="submit" class="btn btn-farm w-100 py-2 fw-semibold" id="pay-button">
+            <i class="bi bi-lock-fill"></i> {{ order.total_amount|money }} öde
+          </button>
+        </form>
+      </div></div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+        <h2 class="h6 fw-semibold">Sipariş #{{ order.id }}</h2>
+        <div class="small text-muted mb-2">{{ order.producer.farm_name if order.producer else "" }}</div>
+        {% for item in order.items %}
+          <div class="d-flex justify-content-between small py-1">
+            <span>{{ item.listing.title }} × {{ item.quantity|qty }} {{ item.listing.product.unit }}</span>
+            <span class="text-nowrap">{{ item.subtotal|money }}</span>
+          </div>
+        {% endfor %}
+        <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-2">
+          <span>Toplam</span><span class="text-farm">{{ order.total_amount|money }}</span>
+        </div>
+      </div></div>
+
+      {% if test_cards %}
+        <div class="card border-warning shadow-sm"><div class="card-body">
+          <h2 class="h6 fw-semibold"><i class="bi bi-cone-striped text-warning"></i> Test ortamı: kullanılabilir kartlar</h2>
+          <p class="small text-muted mb-2">Gerçek para çekilmez. Son kullanma: gelecekte herhangi bir tarih, CVC: 3 rakam.</p>
+          <ul class="list-unstyled small mb-0">
+            {% for number, label in test_cards %}
+              <li class="d-flex justify-content-between py-1 border-bottom">
+                <code>{{ number[:4] }} {{ number[4:8] }} {{ number[8:12] }} {{ number[12:] }}</code>
+                <span class="text-muted">{{ label }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Çift tıklamayla aynı ödemenin iki kez gönderilmesini önle (sunucu tarafında da idempotency var)
+  document.querySelector("form").addEventListener("submit", function () {
+    const button = document.getElementById("pay-button");
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> İşleniyor...';
+  });
+</script>
+{% endblock %}

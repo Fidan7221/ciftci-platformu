@@ -113,9 +113,10 @@ def checkout():
                 return redirect(url_for("cart.view"))
         else:
             if len(orders) == 1:
-                flash("Siparişiniz alındı.", "success")
-                return redirect(url_for("orders.detail", order_id=orders[0].id))
-            flash(f"Siparişiniz {len(orders)} üreticiye göre {len(orders)} ayrı siparişe bölündü.", "success")
+                flash("Siparişiniz alındı. Ödemeyi tamamladığınızda üreticiye iletilecek.", "success")
+                return redirect(url_for("payments.pay", order_id=orders[0].id))
+            flash(f"Siparişiniz {len(orders)} üreticiye göre {len(orders)} ayrı siparişe bölündü. "
+                  "Her birini listeden ödeyebilirsiniz.", "success")
             return redirect(url_for("orders.my_orders"))
 
     return render_template("cart/checkout.html", form=form, summary=summary)

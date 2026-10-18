@@ -3,7 +3,7 @@
 Bingöl Üniversitesi Bilgisayar Programcılığı dönem projesi.
 Çiftçilerin ürünlerini aracısız satabildiği, müşterilerin doğrudan üreticiden alışveriş yaptığı bir pazar yeri.
 
-**Sürüm:** `v0.8.0-vize` (ara sürüm) · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5
+**Sürüm:** `v0.9.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5
 
 ## Kurulum
 
@@ -13,7 +13,7 @@ venv\Scripts\Activate.ps1          # Windows  (macOS/Linux: source venv/bin/acti
 pip install -r requirements.txt
 copy .env.example .env             # macOS/Linux: cp .env.example .env  → SECRET_KEY değerini doldurun
 flask db upgrade                   # tabloları oluşturur
-flask seed-demo                    # roller, kategoriler ve demo verileri
+flask seed-demo                    # roller, kategoriler, demo verileri ve 30 günlük hal fiyatı
 python run.py                      # http://127.0.0.1:5000
 ```
 
@@ -31,7 +31,7 @@ Tüm hesapların parolası: `Demo12345`
 ## Testler
 
 ```bash
-pytest -v          # 95 test
+pytest -v          # 151 test (internete çıkmaz; harici API'ler taklit edilir)
 ```
 
 | Dosya | Kapsam |
@@ -41,6 +41,8 @@ pytest -v          # 95 test
 | `test_producer.py`, `test_categories.py` | Üretici profili, ürün CRUD, görsel yükleme, kategoriler |
 | `test_listings.py`, `test_cart.py`, `test_orders.py` | İlan, sepet, sipariş, transaction, durum makinesi |
 | `test_integration.py` | Uçtan uca akış, rol bazlı sayfa taraması, CSRF, hata sayfaları |
+| `test_integrations.py` | Harici API katmanı: zaman aşımı, yeniden deneme, 429, hız sınırı, imza, idempotency (mock) |
+| `test_payments.py`, `test_prices.py` | Ödeme akışı, iade, ödenmeyen sipariş iptali; fiyat senkronu ve karşılaştırma |
 
 ## Mimari
 
@@ -50,9 +52,10 @@ Ayrıntılar: [`docs/VIZE_RAPORU.md`](docs/VIZE_RAPORU.md)
 ```
 app/
 ├── models/         # 14 tablo (SQLAlchemy)
+├── integrations/   # Harici API'ler: http_client, price_api, payment_gateway (Hafta 9)
 ├── repositories/   # Tüm sorgular; atomik stok güncellemeleri
-├── services/       # İş kuralları (auth, producer, category, listing, cart, order)
-├── routes/         # Blueprint'ler: main, auth, producer, admin, market, cart, orders
+├── services/       # İş kuralları (auth, producer, category, listing, cart, order, payment, price)
+├── routes/         # Blueprint'ler: main, auth, producer, admin, market, cart, orders, payments, prices
 ├── forms/          # Flask-WTF formları (CSRF + doğrulama)
 ├── utils/          # Dekoratörler (@role_required), görsel yükleme, biçimlendirme
 ├── templates/      # Jinja2 + Bootstrap 5
@@ -69,4 +72,21 @@ docs/               # Vize raporu, AI kullanım günlüğü, sözlü sınav haz�
 | `flask seed-db` | Yalnızca rolleri ve kategorileri ekler |
 | `flask seed-demo` | Demo hesapları, ürünleri ve ilanları ekler (tekrar çalıştırılabilir) |
 | `flask create-admin` | Yeni yönetici hesabı açar |
+| `flask fetch-prices --days 30` | Hal fiyatlarını sağlayıcıdan çeker (geçmiş günler dahil) |
+| `flask cancel-unpaid --hours 24` | Süresi dolan ödenmemiş siparişleri iptal eder, stoğu serbest bırakır |
 | `flask db migrate -m "açıklama"` / `flask db upgrade` | Model değişikliğini veri tabanına uygular |
+
+## Harici API'ler (Hafta 9)
+
+`.env` içindeki `USE_MOCK_APIS=true` iken internete çıkılmaz: sahte hal fiyatı sağlayıcısı ve test ödeme
+sağlayıcısı kullanılır. Gerçek / sandbox servise geçmek için `USE_MOCK_APIS=false` yapıp `PRICE_API_*` ve
+`PAYMENT_API_*` değişkenlerini doldurun. Anahtarlar yalnızca `.env` dosyasında durur.
+
+Test kartları (yalnızca sahte sağlayıcıda; son kullanma: gelecekte herhangi bir tarih, CVC: 3 rakam):
+
+| Kart | Sonuç |
+|---|---|
+| `4111 1111 1111 1111` | Başarılı |
+| `4000 0000 0000 0002` | Reddedilir |
+| `4000 0000 0000 9995` | Yetersiz bakiye |
+| `4000 0000 0000 0119` | Zaman aşımı (tekrar denemede aynı ödeme döner, çift çekim olmaz) |

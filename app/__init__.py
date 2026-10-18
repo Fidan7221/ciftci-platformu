@@ -84,6 +84,8 @@ def register_blueprints(app):
     from app.routes.main_routes import main_bp
     from app.routes.market_routes import market_bp
     from app.routes.order_routes import order_bp
+    from app.routes.payment_routes import payment_bp
+    from app.routes.price_routes import price_bp
     from app.routes.producer_routes import producer_bp
 
     app.register_blueprint(main_bp)
@@ -93,6 +95,8 @@ def register_blueprints(app):
     app.register_blueprint(market_bp)    # Hafta 7: pazar vitrini
     app.register_blueprint(cart_bp)      # Hafta 7: sepet
     app.register_blueprint(order_bp)     # Hafta 7: siparişler
+    app.register_blueprint(payment_bp)   # Hafta 9: ödeme
+    app.register_blueprint(price_bp)     # Hafta 9: hal fiyatları
 
 
 def register_error_handlers(app):
@@ -108,6 +112,13 @@ def register_error_handlers(app):
     def too_large(error):
         # MAX_CONTENT_LENGTH (5 MB) aşıldığında Flask 413 döndürür
         return render_template("errors/413.html"), 413
+
+    @app.errorhandler(429)
+    def too_many_requests(error):
+        retry_after = error.description if isinstance(error.description, int) else 60
+        response = app.make_response((render_template("errors/429.html", retry_after=retry_after), 429))
+        response.headers["Retry-After"] = str(retry_after)
+        return response
 
     @app.errorhandler(CSRFError)
     def csrf_error(error):
@@ -146,6 +157,34 @@ def register_cli_commands(app):
         print("Demo verileri hazır. Tüm hesapların parolası:", DEMO_PASSWORD)
         for role, email in accounts.items():
             print(f"  {role:<10} {email}")
+
+    @app.cli.command("fetch-prices")
+    @click.option("--days", default=1, show_default=True, help="Bugün dahil kaç günlük fiyat çekilsin")
+    def fetch_prices(days):
+        """Hal fiyatlarını sağlayıcıdan çekip market_prices tablosuna yazar (Hafta 9).
+
+        Örnek: flask fetch-prices --days 60   (Hafta 10'daki tahmin modeli için geçmiş veri)
+        """
+        from app.services import price_service
+        from app.services.errors import ServiceError
+
+        try:
+            result = price_service.backfill(days)
+        except ServiceError as error:
+            print(f"Hata: {error.message}")
+            raise SystemExit(1)
+        print(f"{result['days']} gün işlendi: {result['inserted']} yeni, {result['updated']} güncellenen, "
+              f"{result['invalid']} hatalı satır.")
+
+    @app.cli.command("cancel-unpaid")
+    @click.option("--hours", type=int, default=None, help="Varsayılan: UNPAID_ORDER_TIMEOUT_HOURS")
+    def cancel_unpaid(hours):
+        """Uzun süredir ödenmemiş siparişleri iptal eder, stokları serbest bırakır (Hafta 9)."""
+        from app.services import order_service
+
+        hours = hours or app.config["UNPAID_ORDER_TIMEOUT_HOURS"]
+        count = order_service.cancel_unpaid_orders(hours)
+        print(f"{hours} saatten eski {count} ödenmemiş sipariş iptal edildi.")
 
     @app.cli.command("create-admin")
     @click.option("--name", prompt="Ad Soyad")
