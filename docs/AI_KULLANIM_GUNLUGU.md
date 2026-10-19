@@ -1,4 +1,4 @@
-# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 10)
+# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 11)
 
 **Kullanılan araç:** Claude (Anthropic), claude.ai sohbet arayüzü
 **Kullanım biçimi:** Her hafta için gereksinimler istem olarak verildi; yapay zekâ kod, test ve açıklama üretti.
@@ -23,6 +23,7 @@ Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırı
 | 19.10.2026 | 8 | Vize: entegrasyon, düzeltme, belge | Entegrasyon taraması, 6 düzeltme, demo verisi, 14 entegrasyon testi, rapor ve sözlü hazırlık | [ ] | [ ] / 95 test |
 | 19.10.2026 | 9 | Fiyat ve ödeme API entegrasyonu | Ortak HTTP istemcisi (timeout, retry, 429, hız sınırı), sahte/HTTP fiyat ve ödeme sağlayıcıları, idempotency, HMAC imzası, iade akışı, 56 test | [ ] | [ ] / 151 test |
 | 19.10.2026 | 10 | Fiyat tahmini ve trend analizi | Doğrusal regresyon modeli, geri test, güven skoru, öneri kuralları, tahmin kaydı, grafik kartları, model kartı, 32 test | [ ] Model seçimi (neden doğrusal regresyon) ve öneri kurallarındaki prim oranlarını kendim değerlendirdim mi? | [ ] / 183 test |
+| 19.10.2026 | 11 | Güvenlik, ince yetkilendirme, performans | Güvenlik denetimi (CSRF/XSS/SQLi/IDOR), CSP nonce + güvenlik başlıkları, LIKE joker kaçışı, hesap kilitleme ve hız sınırları, indeksler, N+1 düzeltmeleri (selectinload/joinedload/contains_eager), sorgu sayacı, `docs/GUVENLIK_DENETIMI.md`, 41 güvenlik testi | [ ] | [ ] / 224 test |
 
 ## Yapay zekânın hataları ve nasıl yakalandığı
 
@@ -37,6 +38,8 @@ bir kısmı ise teslim edilen koda girdi ve Hafta 8 entegrasyon taramasında bul
 | 7 | Menü yenilenirken üreticinin "Profilim" bağlantısı kaldırılmıştı | Teslim edilen koddaydı; Hafta 8 entegrasyon taramasında bulundu | Kullanıcı açılır menüsüne eklendi |
 | 7 | Saatler UTC gösteriliyordu | Teslim edilen koddaydı; Hafta 8 entegrasyon taramasında bulundu | `datetime_tr` filtresi UTC+3'e çeviriyor + test |
 | 9 | Test dosyasında `db.update` kullanılmıştı; Flask-SQLAlchemy'nin bunu sağladığı kesin değildi | Teslim öncesi kontrol (yapay zekâ) | `sqlalchemy.update` doğrudan içe aktarıldı |
+| 11 | Performans testinde `expunge_all()` kullanılmıştı; oturumdaki `current_user` nesnesi kopup `DetachedInstanceError` verirdi | Teslim öncesi kontrol (yapay zekâ) | `expire_all()` ile değiştirildi |
+| 11 | `tojson` filtresi `₺` işaretini `\u20ba` olarak kaçırdığı için eski bir test (`test_prices.py`) kırılacaktı | Teslim öncesi kontrol (yapay zekâ) | Test, sembolden bağımsız `25,00` metnini arayacak şekilde güncellendi |
 | [ ] | [Kendi bulduğunuz hatalar] | [ ] | [ ] |
 
 ## Öğrendiklerim / yapay zekânın sınırları

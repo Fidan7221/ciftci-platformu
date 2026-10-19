@@ -66,17 +66,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
   // Seçilen ürün için ilana ayrılabilecek miktarı göster (bilgi amaçlı; asıl kontrol sunucuda)
   (function () {
-    const remaining = {
-      {% for product_id, info in remaining.items() %}
-        "{{ product_id }}": {
-          stock: "{{ info[0]|qty }} {{ info[1] }}",
-          hal: {% if info[2] %}"{{ info[2][0]|money }} / {{ info[1] }} ({{ info[2][1]|date_tr }})"{% else %}null{% endif %}
-        },
-      {% endfor %}
-    };
+    const remaining = {{ remaining_js|tojson }};
     const suggestions = {{ suggestions|tojson }};
     const select = document.getElementById("product_id");
     const hint = document.getElementById("remaining-hint");

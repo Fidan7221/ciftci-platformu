@@ -6,10 +6,13 @@ Kurallar:
 - Yönetici hesabı yalnızca terminalden açılır: flask create-admin
 - Parola düz metin olarak hiçbir yerde saklanmaz (User.set_password hash'ler).
 """
+from werkzeug.security import check_password_hash, generate_password_hash
+
 from app.models import Cart, ProducerProfile, RoleName, User
 from app.repositories.user_repository import RoleRepository, UserRepository
 
 SELF_REGISTER_ROLES = (RoleName.CUSTOMER, RoleName.PRODUCER)
+_DUMMY_HASH = generate_password_hash("zamanlama-esitleme-icin-sahte-parola")
 
 
 class AuthError(Exception):
@@ -81,7 +84,12 @@ def authenticate(email, password):
     böylece saldırgan hangi e-postaların kayıtlı olduğunu öğrenemez.
     """
     user = UserRepository.get_by_email(normalize_email(email))
-    if user is None or not user.check_password(password):
+    if user is None:
+        # Hafta 11: Kullanıcı yoksa da aynı maliyette bir hash kontrolü yap. Aksi halde "kayıtlı değil"
+        # yanıtı ~50 ms daha hızlı döner ve saldırgan yanıt süresinden kayıtlı e-postaları çıkarabilir.
+        check_password_hash(_DUMMY_HASH, password or "")
+        return None
+    if not user.check_password(password):
         return None
     if not user.is_active:
         raise AuthError("Hesabınız pasif durumda. Lütfen yöneticiyle iletişime geçin.")

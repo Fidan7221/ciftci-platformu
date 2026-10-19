@@ -31,6 +31,9 @@ class Listing(BaseModel):
     __table_args__ = (
         db.CheckConstraint("price >= 0", name="ck_listing_price_positive"),
         db.CheckConstraint("stock_quantity >= 0", name="ck_listing_stock_positive"),
+        # Hafta 11: Pazar sorgusu "status = active ... ORDER BY created_at DESC" çalıştırır;
+        # bileşik indeks hem süzmeyi hem sıralamayı tek indeksle karşılar.
+        db.Index("ix_listings_status_created_at", "status", "created_at"),
     )
 
     product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False, index=True)

@@ -2,6 +2,29 @@
 
 Sürüm numaraları [Semantic Versioning](https://semver.org/lang/tr/) kuralına uyar: `ANA.ARA.YAMA[-ön-sürüm]`.
 
+## [0.11.0] — 2026-10-19 · Güvenlik, ince yetkilendirme ve performans
+
+### Eklendi
+- `app/security.py`: istek başına nonce'lu Content-Security-Policy, `X-Frame-Options`, `X-Content-Type-Options`,
+  `Referrer-Policy`, `Permissions-Policy`, üretimde HSTS; geliştirme/testte `X-Query-Count` sorgu sayacı.
+- Hesap kilitleme (15 dk'da 5 hatalı giriş), IP başına giriş/kayıt sınırı, sepete ekleme sınırı (`429`).
+- Zamanlama saldırısına karşı: olmayan e-postada da sahte parola hash'i doğrulanır.
+- Veritabanı indeksleri: `listings(status, created_at)`, `orders(customer_id, created_at)`,
+  `market_prices(category_id, price_date)`, `price_predictions(product_id, model_name, target_date)`,
+  `products.category_id`, `categories.parent_id`, `users.role_id`, `cart_items.listing_id`, `order_items.listing_id`,
+  `reviews.customer_id` (migration gerekir).
+- `static/js/app.js` (onay pencereleri ve geri bağlantısı), `docs/GUVENLIK_DENETIMI.md`.
+- `docs/ER_DIYAGRAMI.md` + `docs/er_diyagrami.png`: 14 tablonun güncel ER diyagramı (Mermaid).
+- `tests/test_security.py` (41 test) — toplam 224.
+
+### Değişti
+- Şablonlardaki satır içi `onsubmit` / `javascript:` kaldırıldı (`data-confirm`, `data-back`); satır içi betiklere nonce eklendi.
+- İlan formundaki JS verisi `tojson` ile aktarılıyor.
+- Arama sorgularında `%` ve `_` joker karakterleri kaçırılıyor (`contains_pattern`).
+- N+1 düzeltmeleri: pazar, sipariş listeleri, sepet, yönetici kategorileri (`GROUP BY` sayımı), fiyat tablosu
+  (önceki gün ortalamaları ve tahminler tek sorguda), oturum kullanıcısı rol/profil ile birlikte yükleniyor.
+- `session_protection = "strong"`; üretimde varsayılan veya 32 karakterden kısa `SECRET_KEY` ile uygulama başlamaz.
+
 ## [0.10.0] — 2026-10-19 · Yapay zekâ: fiyat tahmini ve trend analizi
 
 ### Eklendi

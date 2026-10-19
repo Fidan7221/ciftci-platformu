@@ -2,10 +2,11 @@
 from datetime import date
 
 from sqlalchemy import func, or_
+from sqlalchemy.orm import contains_eager
 
 from app.extensions import db
 from app.models import Listing, ListingStatus, ProducerProfile, Product
-from app.repositories.base_repository import BaseRepository
+from app.repositories.base_repository import LIKE_ESCAPE, BaseRepository, contains_pattern
 
 
 def _available_conditions():
@@ -33,6 +34,7 @@ class ListingRepository(BaseRepository):
     @staticmethod
     def paginate_for_producer(producer_id, status=None, page=1, per_page=12):
         stmt = (db.select(Listing).join(Listing.product)
+                .options(contains_eager(Listing.product))  # Hafta 11: ürün zaten JOIN'de; ayrı sorgu yok
                 .where(Product.producer_id == producer_id))
         if status:
             stmt = stmt.where(Listing.status == status)
@@ -42,11 +44,14 @@ class ListingRepository(BaseRepository):
     @staticmethod
     def paginate_available(search=None, category_ids=None, page=1, per_page=12):
         stmt = (db.select(Listing).join(Listing.product).join(Product.producer)
+                # Hafta 11: JOIN'lenen ürün ve üretici nesnelere doldurulur. Olmasaydı her kart için
+                # listing.product ve product.producer ayrı ayrı sorgulanırdı (12 ilan = 24 ek sorgu).
+                .options(contains_eager(Listing.product).contains_eager(Product.producer))
                 .where(*_available_conditions()))
         if search:
-            pattern = f"%{search}%"
-            stmt = stmt.where(or_(Listing.title.ilike(pattern), Product.name.ilike(pattern),
-                                  ProducerProfile.farm_name.ilike(pattern)))
+            pattern = contains_pattern(search)
+            stmt = stmt.where(or_(Listing.title.ilike(pattern, escape=LIKE_ESCAPE), Product.name.ilike(pattern, escape=LIKE_ESCAPE),
+                                  ProducerProfile.farm_name.ilike(pattern, escape=LIKE_ESCAPE)))
         if category_ids:
             stmt = stmt.where(Product.category_id.in_(category_ids))
         stmt = stmt.order_by(Listing.created_at.desc(), Listing.id.desc())

@@ -15,6 +15,9 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
+DEV_SECRET_KEY = "gelistirme-icin-gecici-anahtar"  # Üretimde kullanılırsa uygulama başlamaz (Hafta 11)
+
+
 def _env_bool(name, default):
     value = os.environ.get(name)
     if value is None or value == "":
@@ -26,9 +29,9 @@ class Config:
     """Tüm ortamların ortak ayarları."""
 
     APP_NAME = "Tarladan Sofraya"
-    APP_VERSION = "0.10.0"  # Git etiketiyle aynı tutulur: v0.10.0
+    APP_VERSION = "0.11.0"  # Git etiketiyle aynı tutulur: v0.11.0
 
-    SECRET_KEY = os.environ.get("SECRET_KEY", "gelistirme-icin-gecici-anahtar")
+    SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
 
     # Oturum çerezi güvenliği (Hafta 8)
     SESSION_COOKIE_HTTPONLY = True      # JavaScript çereze erişemez (XSS'e karşı)
@@ -76,6 +79,14 @@ class Config:
     # Ödenmeyen siparişler bu süre sonra iptal edilir (flask cancel-unpaid), stok geri döner
     UNPAID_ORDER_TIMEOUT_HOURS = int(os.environ.get("UNPAID_ORDER_TIMEOUT_HOURS", "24"))
 
+    # --- Kaba kuvvet / spam sınırları (Hafta 11) ---------------------------------------------
+    LOGIN_ATTEMPTS_PER_IP_PER_MIN = 20       # bir IP'den dakikada en fazla giriş denemesi
+    LOGIN_FAILURES_PER_ACCOUNT = 5           # bir hesap için 15 dakikada en fazla HATALI deneme
+    LOGIN_LOCKOUT_SECONDS = 15 * 60
+    REGISTRATIONS_PER_IP_PER_HOUR = 10       # sahte hesap açma (spam) sınırı
+    CART_ADDS_PER_MIN = 30                   # sepete ekleme isteği sınırı
+    QUERY_COUNT_HEADER = False               # True: her yanıta X-Query-Count (N+1 takibi)
+
     # --- Yapay zekâ: fiyat tahmini (Hafta 10) ----------------------------------------------
     AI_FORECAST_HORIZON_DAYS = 7      # kaç gün sonrası tahmin edilir
     AI_WINDOW_DAYS = 30               # model son kaç günün verisiyle eğitilir
@@ -86,6 +97,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    QUERY_COUNT_HEADER = True
     SQLALCHEMY_ECHO = False  # True yaparsanız üretilen SQL sorguları terminale yazılır
 
 
@@ -94,6 +106,7 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False  # Testlerde form göndermeyi kolaylaştırır
     USE_MOCK_APIS = True      # Testler asla gerçek bir API'ye istek atmaz
+    QUERY_COUNT_HEADER = True # N+1 testleri bu başlığı okur
 
 
 class ProductionConfig(Config):

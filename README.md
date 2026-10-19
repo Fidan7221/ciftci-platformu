@@ -3,7 +3,7 @@
 Bingöl Üniversitesi Bilgisayar Programcılığı dönem projesi.
 Çiftçilerin ürünlerini aracısız satabildiği, müşterilerin doğrudan üreticiden alışveriş yaptığı bir pazar yeri.
 
-**Sürüm:** `v0.10.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5, scikit-learn, Chart.js
+**Sürüm:** `v0.11.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5, scikit-learn, Chart.js
 
 ## Kurulum
 
@@ -31,7 +31,7 @@ Tüm hesapların parolası: `Demo12345`
 ## Testler
 
 ```bash
-pytest -v          # 183 test (internete çıkmaz; harici API'ler taklit edilir)
+pytest -v          # 224 test (internete çıkmaz; harici API'ler taklit edilir)
 ```
 
 | Dosya | Kapsam |
@@ -44,8 +44,11 @@ pytest -v          # 183 test (internete çıkmaz; harici API'ler taklit edilir)
 | `test_integrations.py` | Harici API katmanı: zaman aşımı, yeniden deneme, 429, hız sınırı, imza, idempotency (mock) |
 | `test_payments.py`, `test_prices.py` | Ödeme akışı, iade, ödenmeyen sipariş iptali; fiyat senkronu ve karşılaştırma |
 | `test_ai.py` | Tahmin algoritması (bilinen serilerle), öneri kuralları, tahmin kaydı, panellerdeki kartlar |
+| `test_security.py` | Güvenlik başlıkları/CSP, XSS, SQL injection, CSRF, IDOR (404), rol ihlali (403), toplu atama, brute force ve hız sınırları, N+1 sorgu sayısı, indeksler |
 
 ## Mimari
+
+Veritabanı şeması (14 tablo): [`docs/ER_DIYAGRAMI.md`](docs/ER_DIYAGRAMI.md)
 
 Katmanlı mimari: **Sunum** (`routes/`, `forms/`, `templates/`) → **İş mantığı** (`services/`) → **Veri erişimi** (`repositories/`) → **Veri** (`models/`).
 Ayrıntılar: [`docs/VIZE_RAPORU.md`](docs/VIZE_RAPORU.md)
@@ -99,3 +102,19 @@ Test kartları (yalnızca sahte sağlayıcıda; son kullanma: gelecekte herhangi
 Son 30 günün hal fiyatına doğrusal regresyon uygulanarak 7 gün sonrası tahmin edilir; trend yönü, %95
 tahmin aralığı ve geri teste dayalı güven skoru hesaplanır. Üretici panelinde ve ilan formunda fiyat önerisi,
 müşteri panelinde ve fiyat sayfalarında trend grafiği gösterilir. Ayrıntılar: [`docs/MODEL_KARTI.md`](docs/MODEL_KARTI.md)
+
+## Güvenlik ve performans (Hafta 11)
+
+- **Güvenlik başlıkları:** istek başına nonce'lu CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, üretimde HSTS.
+- **Yetkilendirme:** rol ihlali → `403`; başkasının ürünü/ilanı/siparişi → `404` (sorgular sahibe göre filtrelenir).
+- **Brute force:** aynı hesaba 15 dakikada 5 hatalı giriş → kilit; IP başına dakikada 20 giriş, saatte 10 kayıt, dakikada 30 sepete ekleme.
+- **Performans:** sık sorgulanan sütunlara indeksler, listelerde `selectinload` / `joinedload` / `contains_eager`.
+  Geliştirme ortamında her yanıtın `X-Query-Count` başlığı o sayfanın kaç SQL sorgusu çalıştırdığını gösterir.
+- Ayrıntılar ve tehdit → önlem → test tablosu: [`docs/GUVENLIK_DENETIMI.md`](docs/GUVENLIK_DENETIMI.md)
+
+Hafta 11 yeni indeksler eklediği için bir kez migration çalıştırın:
+
+```bash
+flask db migrate -m "hafta 11 indeksler"
+flask db upgrade
+```

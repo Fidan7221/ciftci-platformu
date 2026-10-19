@@ -25,7 +25,7 @@ class CartItem(BaseModel):
     )
 
     cart_id = db.Column(db.Integer, db.ForeignKey("carts.id"), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False, index=True)
     quantity = db.Column(db.Numeric(10, 2), nullable=False)
 
     cart = db.relationship("Cart", back_populates="items")

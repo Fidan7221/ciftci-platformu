@@ -24,8 +24,9 @@ def _category_or_404(category_id):
 @admin_bp.route("/kategoriler")
 @role_required(RoleName.ADMIN)
 def categories():
-    return render_template("admin/categories.html",
-                           tree=category_service.category_tree(), delete_form=DeleteForm())
+    return render_template("admin/categories.html", tree=category_service.category_tree(),
+                           counts=CategoryRepository.product_counts(),  # Hafta 11: N+1 yerine tek sorgu
+                           delete_form=DeleteForm())
 
 
 @admin_bp.route("/kategoriler/yeni", methods=["GET", "POST"])

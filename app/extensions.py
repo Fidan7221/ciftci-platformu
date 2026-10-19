@@ -18,3 +18,5 @@ csrf = CSRFProtect()
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Bu sayfayı görmek için giriş yapmalısınız."
 login_manager.login_message_category = "warning"
+# Hafta 11: Oturum çerezi başka bir tarayıcı/IP'ye taşınırsa (çalınırsa) oturum geçersiz sayılır
+login_manager.session_protection = "strong"

@@ -25,12 +25,9 @@ class SyncForm(FlaskForm):
 def index():
     search = request.args.get("q", "")
     board = price_service.latest_board(search)
-    # Hafta 10: her satır için kategori ve 7 günlük tahmin (veri yetersizse None)
-    forecasts = {}
-    for row in board["rows"]:
-        category = row["price"].category
-        if category is not None and category.id not in forecasts:
-            forecasts[category.id] = prediction_service.forecast_for_category(category.id)
+    # Hafta 10: her satır için 7 günlük tahmin. Hafta 11: tüm kategorilerin verisi TEK sorguda çekilir.
+    category_ids = {row["price"].category_id for row in board["rows"] if row["price"].category_id}
+    forecasts = prediction_service.forecasts_for_categories(category_ids)
     return render_template("prices/index.html", board=board, search=search, forecasts=forecasts,
                            info=price_service.status(), sync_form=SyncForm())
 

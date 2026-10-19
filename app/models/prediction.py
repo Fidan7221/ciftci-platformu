@@ -20,6 +20,10 @@ class Trend:
 
 class PricePrediction(BaseModel):
     __tablename__ = "price_predictions"
+    __table_args__ = (
+        # Hafta 11: Upsert sorgusu bu üç sütunla arar (ürün + model + hedef gün)
+        db.Index("ix_predictions_product_model_target", "product_id", "model_name", "target_date"),
+    )
 
     product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False, index=True)
     model_name = db.Column(db.String(50), nullable=False)  # örn. "linreg-30g-v1"

@@ -7,6 +7,7 @@ from app.models import RoleName
 from app.services import cart_service, order_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
+from app.utils.rate_limit import rate_limited
 from app.utils.forms import show_service_error
 
 cart_bp = Blueprint("cart", __name__, url_prefix="/sepet")
@@ -42,6 +43,7 @@ def view():
 
 @cart_bp.route("/ekle/<int:listing_id>", methods=["POST"])
 @role_required(RoleName.CUSTOMER)
+@rate_limited("cart_add", "CART_ADDS_PER_MIN", period=60)  # Hafta 11: otomatik istek / spam sınırı
 def add(listing_id):
     form = AddToCartForm()
     back = url_for("market.detail", listing_id=listing_id)

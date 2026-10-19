@@ -24,12 +24,12 @@
                   <span class="{{ 'fw-semibold' if not is_child }}">{{ category.name }}</span>
                 </td>
                 <td><code>{{ category.slug }}</code></td>
-                <td class="text-center">{{ category.products|length }}</td>
+                <td class="text-center">{{ counts.get(category.id, 0) }}</td>
                 <td class="text-end">
                   <a href="{{ url_for('admin.edit_category', category_id=category.id) }}"
                      class="btn btn-sm btn-outline-secondary" aria-label="Düzenle"><i class="bi bi-pencil"></i></a>
                   <form method="post" action="{{ url_for('admin.delete_category', category_id=category.id) }}"
-                        class="d-inline" onsubmit="return confirm('Bu kategori silinsin mi?');">
+                        class="d-inline" data-confirm="Bu kategori silinsin mi?">
                     {{ delete_form.hidden_tag() }}
                     <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Sil"><i class="bi bi-trash"></i></button>
                   </form>

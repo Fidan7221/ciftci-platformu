@@ -1,5 +1,6 @@
 """Kullanıcı ve rol modelleri (roles, users tabloları)."""
 from flask_login import UserMixin
+from sqlalchemy.orm import joinedload
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db, login_manager
@@ -31,7 +32,7 @@ class Role(BaseModel):
 class User(UserMixin, BaseModel):
     __tablename__ = "users"
 
-    role_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=False, index=True)
     full_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -86,5 +87,16 @@ class User(UserMixin, BaseModel):
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Flask-Login her istekte oturumdaki kullanıcıyı bu fonksiyonla bulur."""
-    return db.session.get(User, int(user_id))
+    """Flask-Login her istekte oturumdaki kullanıcıyı bu fonksiyonla bulur.
+
+    Hafta 11: Menü her sayfada kullanıcının rolünü ve (üreticiyse) profilini kullanır.
+    joinedload ile bunlar kullanıcıyla AYNI sorguda gelir: istek başına 3 yerine 1 sorgu.
+    """
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return None  # Bozuk/değiştirilmiş oturum değeri
+    return db.session.execute(
+        db.select(User).options(joinedload(User.role), joinedload(User.producer_profile))
+        .where(User.id == user_id)
+    ).unique().scalar_one_or_none()

@@ -16,7 +16,7 @@ class Review(BaseModel):
     order_item_id = db.Column(
         db.Integer, db.ForeignKey("order_items.id"), unique=True, nullable=False
     )
-    customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     producer_id = db.Column(
         db.Integer, db.ForeignKey("producer_profiles.id"), nullable=False, index=True
     )

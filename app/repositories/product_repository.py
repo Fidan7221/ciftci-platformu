@@ -1,9 +1,10 @@
 """Ürün ve kategori sorguları (Hafta 6)."""
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import Category, Listing, OrderItem, Product
-from app.repositories.base_repository import BaseRepository
+from app.repositories.base_repository import LIKE_ESCAPE, BaseRepository, contains_pattern
 
 
 class ProductRepository(BaseRepository):
@@ -18,9 +19,9 @@ class ProductRepository(BaseRepository):
 
     @staticmethod
     def paginate_for_producer(producer_id, search=None, category_id=None, page=1, per_page=12):
-        stmt = db.select(Product).filter_by(producer_id=producer_id)
+        stmt = db.select(Product).filter_by(producer_id=producer_id).options(selectinload(Product.category))
         if search:
-            stmt = stmt.where(Product.name.ilike(f"%{search}%"))
+            stmt = stmt.where(Product.name.ilike(contains_pattern(search), escape=LIKE_ESCAPE))
         if category_id:
             stmt = stmt.where(Product.category_id == category_id)
         stmt = stmt.order_by(Product.created_at.desc(), Product.id.desc())
@@ -40,7 +41,7 @@ class ProductRepository(BaseRepository):
     @staticmethod
     def recent_for_producer(producer_id, limit=5):
         return db.session.execute(
-            db.select(Product).filter_by(producer_id=producer_id)
+            db.select(Product).filter_by(producer_id=producer_id).options(selectinload(Product.category))
             .order_by(Product.created_at.desc(), Product.id.desc()).limit(limit)
         ).scalars().all()
 
@@ -62,6 +63,7 @@ class CategoryRepository(BaseRepository):
     def get_top_level():
         return db.session.execute(
             db.select(Category).filter_by(parent_id=None).order_by(Category.name)
+            .options(selectinload(Category.children))  # Hafta 11: alt kategoriler tek sorguda
         ).scalars().all()
 
     @staticmethod
@@ -69,6 +71,17 @@ class CategoryRepository(BaseRepository):
         return db.session.execute(
             db.select(Category).filter_by(slug=slug)
         ).scalar_one_or_none()
+
+    @staticmethod
+    def product_counts():
+        """{kategori id: ürün sayısı} — tek GROUP BY sorgusu (Hafta 11).
+
+        Şablonda category.products|length yazmak her kategori için TÜM ürünleri yüklerdi.
+        """
+        rows = db.session.execute(
+            db.select(Product.category_id, func.count(Product.id)).group_by(Product.category_id)
+        ).all()
+        return dict(rows)
 
     @staticmethod
     def product_count(category_id):

@@ -10,6 +10,7 @@ Etkilenen satır sayısı 0 ise stok yetmemiştir. Böylece aynı anda gelen iki
 sipariş aynı son ürünü satın alamaz (race condition önlenir).
 """
 from sqlalchemy import case, func, update
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.extensions import db
 from app.models import Listing, ListingStatus, Order, OrderItem, OrderStatus, Product
@@ -19,20 +20,37 @@ from app.repositories.base_repository import BaseRepository
 _NO_SYNC = {"synchronize_session": False}
 
 
+# Hafta 11: Sipariş listelerinde her satır kalemleri, ilanı, ürünü, üreticiyi, müşteriyi ve ödemeyi gösterir.
+# selectinload her ilişki için TEK ek sorgu çalıştırır (WHERE id IN (...)); sipariş sayısı artsa da
+# sorgu sayısı sabit kalır. joinedload ise tekil ilişkileri (müşteri) aynı sorguda JOIN ile getirir.
+ORDER_DETAILS = (
+    selectinload(Order.items).selectinload(OrderItem.listing).selectinload(Listing.product),
+    selectinload(Order.items).selectinload(OrderItem.producer),
+    joinedload(Order.customer),
+    selectinload(Order.payment),
+)
+
+
 class OrderRepository(BaseRepository):
     model = Order
+
+    @staticmethod
+    def get_with_details(order_id):
+        return db.session.execute(
+            db.select(Order).options(*ORDER_DETAILS).where(Order.id == order_id)
+        ).unique().scalar_one_or_none()
 
     # --- Sorgular ---------------------------------------------------------
 
     @staticmethod
     def paginate_for_customer(customer_id, page=1, per_page=10):
-        stmt = (db.select(Order).filter_by(customer_id=customer_id)
+        stmt = (db.select(Order).filter_by(customer_id=customer_id).options(*ORDER_DETAILS)
                 .order_by(Order.created_at.desc(), Order.id.desc()))
         return db.paginate(stmt, page=page, per_page=per_page, error_out=False)
 
     @staticmethod
     def paginate_for_producer(producer_id, status=None, page=1, per_page=10):
-        stmt = (db.select(Order)
+        stmt = (db.select(Order).options(*ORDER_DETAILS)
                 .where(Order.id.in_(db.select(OrderItem.order_id)
                                     .where(OrderItem.producer_id == producer_id)))
                 .order_by(Order.created_at.desc(), Order.id.desc()))
@@ -152,13 +170,13 @@ class StatsRepository:
     @staticmethod
     def recent_orders_for_customer(customer_id, limit=3):
         return db.session.execute(
-            db.select(Order).filter_by(customer_id=customer_id)
+            db.select(Order).filter_by(customer_id=customer_id).options(*ORDER_DETAILS)
             .order_by(Order.created_at.desc(), Order.id.desc()).limit(limit)
-        ).scalars().all()
+        ).unique().scalars().all()
 
     @staticmethod
     def paginate_all_orders(status=None, page=1, per_page=15):
-        stmt = db.select(Order).order_by(Order.created_at.desc(), Order.id.desc())
+        stmt = db.select(Order).options(*ORDER_DETAILS).order_by(Order.created_at.desc(), Order.id.desc())
         if status:
             stmt = stmt.where(Order.status == status)
         return db.paginate(stmt, page=page, per_page=per_page, error_out=False)

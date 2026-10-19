@@ -53,6 +53,19 @@ def forecast_for_category(category_id):
         return None
 
 
+def forecasts_for_categories(category_ids):
+    """Birden çok kategori için tahmin; veri tek sorguda çekilir (Hafta 11). {id: Forecast | None}"""
+    settings = _settings()
+    since = date.today() - timedelta(days=settings["window_days"] * 2)
+    results = {}
+    for category_id, rows in PriceRepository.daily_series_for_categories(list(category_ids), since).items():
+        try:
+            results[category_id] = trend_model.forecast([PricePoint(d, p) for d, p in rows], **settings)
+        except InsufficientDataError:
+            results[category_id] = None
+    return results
+
+
 def chart_payload(forecast):
     """Chart.js için JSON'a çevrilebilir veri: geçmiş seri + tahmin çizgisi + genişleyen tahmin aralığı."""
     history = {p.day: round(p.price, 2) for p in forecast.history}

@@ -12,6 +12,8 @@ class MarketPrice(BaseModel):
     __table_args__ = (
         # Aynı ürünün aynı kaynaktan aynı güne ait fiyatı iki kez kaydedilmez
         db.UniqueConstraint("product_name", "source", "price_date", name="uq_market_price_day"),
+        # Hafta 11: Yapay zekâ modeli "kategori X'in son 60 günü" sorgusunu çok sık çalıştırır
+        db.Index("ix_market_prices_category_date", "category_id", "price_date"),
     )
 
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))

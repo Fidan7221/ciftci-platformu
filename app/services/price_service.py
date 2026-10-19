@@ -97,12 +97,13 @@ def latest_board(search=None):
         return {"date": None, "rows": []}
 
     rows = []
+    previous = PriceRepository.previous_averages(day)  # Hafta 11: satır başına sorgu yerine tek sorgu
     for record in PriceRepository.for_date(day, (search or "").strip() or None):
-        previous = PriceRepository.previous_for(record.product_name, day)
+        before = previous.get(record.product_name)
         change = None
-        if previous is not None and previous.avg_price:
-            change = ((Decimal(record.avg_price) - Decimal(previous.avg_price))
-                      / Decimal(previous.avg_price) * 100).quantize(Decimal("0.1"))
+        if before:
+            before = Decimal(str(before))
+            change = ((Decimal(record.avg_price) - before) / before * 100).quantize(Decimal("0.1"))
         rows.append({"price": record, "change": change})
     return {"date": day, "rows": rows}
 

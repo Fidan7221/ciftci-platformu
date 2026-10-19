@@ -14,6 +14,7 @@ from app.services import (category_service, listing_service, order_service, pred
                           price_service, producer_service)
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
+from app.utils.formatting import format_money, format_qty
 from app.utils.forms import show_service_error
 
 producer_bp = Blueprint("producer", __name__, url_prefix="/uretici")
@@ -226,8 +227,9 @@ def new_listing():
             flash(f"'{listing.title}' ilanı yayında.", "success")
             return redirect(url_for("producer.listings"))
 
+    remaining = _remaining_by_product(profile)
     return render_template("producer/listing_form.html", form=form, listing=None,
-                           remaining=_remaining_by_product(profile),
+                           remaining=remaining, remaining_js=_remaining_js(remaining),
                            suggestions=prediction_service.listing_suggestions(profile))
 
 
@@ -253,8 +255,9 @@ def edit_listing(listing_id):
             flash(f"'{listing.title}' güncellendi.", "success")
             return redirect(url_for("producer.listings"))
 
+    remaining = _remaining_by_product(profile, exclude_listing_id=listing.id)
     return render_template("producer/listing_form.html", form=form, listing=listing,
-                           remaining=_remaining_by_product(profile, exclude_listing_id=listing.id),
+                           remaining=remaining, remaining_js=_remaining_js(remaining),
                            suggestions=prediction_service.listing_suggestions(profile))
 
 
@@ -285,6 +288,21 @@ def _remaining_by_product(profile, exclude_listing_id=None):
             hal = (reference.avg_price, reference.price_date)
         hints[p.id] = (listing_service.remaining_stock_for(p, exclude_listing_id), p.unit, hal)
     return hints
+
+
+def _remaining_js(remaining):
+    """Şablondaki JavaScript'e |tojson ile güvenli aktarılacak metinler (Hafta 11).
+
+    HTML kaçışı (Jinja'nın {{ }}) JavaScript dizesi içinde yeterli değildir; tojson ise
+    tırnak, <, > ve & karakterlerini JS içinde de güvenli biçimde kaçırır.
+    """
+    data = {}
+    for product_id, (amount, unit, hal) in remaining.items():
+        data[product_id] = {
+            "stock": f"{format_qty(amount)} {unit}",
+            "hal": f"{format_money(hal[0])} / {unit} ({hal[1].strftime('%d.%m.%Y')})" if hal else None,
+        }
+    return data
 
 
 # --- Gelen siparişler (Hafta 7) ----------------------------------------------------

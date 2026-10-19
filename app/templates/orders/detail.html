@@ -109,7 +109,7 @@
           <h2 class="h6 fw-semibold">İşlemler</h2>
           {% for action in actions %}
             <form method="post" action="{{ url_for('orders.change_status', order_id=order.id) }}"
-                  onsubmit="return confirm('{{ action.confirm }}');" class="d-grid">
+                  data-confirm="{{ action.confirm }}" class="d-grid">
               {{ status_form.csrf_token }}
               <input type="hidden" name="status" value="{{ action.status }}">
               <button type="submit" class="btn {{ action.css }}">{{ action.label }}</button>

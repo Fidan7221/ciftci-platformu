@@ -77,7 +77,7 @@ def actor_for(order, user):
 
 def get_visible_order(order_id, user):
     """Sipariş yoksa veya kullanıcı göremiyorsa None (rota 404 gösterir)."""
-    order = OrderRepository.get_by_id(order_id)
+    order = OrderRepository.get_with_details(order_id)  # Hafta 11: kalemler tek seferde
     if order is None or actor_for(order, user) is None:
         return None
     return order

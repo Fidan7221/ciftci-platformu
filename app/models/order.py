@@ -32,6 +32,10 @@ class OrderStatus:
 
 class Order(BaseModel):
     __tablename__ = "orders"
+    __table_args__ = (
+        # Hafta 11: "Siparişlerim" sayfası müşteri id'sine göre süzer, tarihe göre sıralar
+        db.Index("ix_orders_customer_created_at", "customer_id", "created_at"),
+    )
 
     customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
@@ -66,7 +70,7 @@ class OrderItem(BaseModel):
     )
 
     order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False, index=True)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False, index=True)
     # Çok üreticili sepet: her kalemin hangi üreticiye ait olduğu (raporlar için)
     producer_id = db.Column(
         db.Integer, db.ForeignKey("producer_profiles.id"), nullable=False, index=True

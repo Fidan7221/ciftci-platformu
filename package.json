@@ -1,0 +1,16 @@
+{
+  "name": "hafta4-veritabani",
+  "version": "1.0.0",
+  "description": "Çiftçi Doğrudan Satış ve Fiyat Takip Platformu - Hafta 4: Veritabanı Tasarımı ve Veri Erişim Katmanı",
+  "main": "src/demo.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "migrate": "node --no-warnings=ExperimentalWarning src/migrate.js",
+    "seed": "node --no-warnings=ExperimentalWarning src/seed.js",
+    "demo": "node --no-warnings=ExperimentalWarning src/demo.js",
+    "sifirla": "node --no-warnings=ExperimentalWarning src/sifirla.js",
+    "hepsi": "node --no-warnings=ExperimentalWarning src/sifirla.js && node --no-warnings=ExperimentalWarning src/migrate.js && node --no-warnings=ExperimentalWarning src/seed.js && node --no-warnings=ExperimentalWarning src/demo.js"
+  }
+}

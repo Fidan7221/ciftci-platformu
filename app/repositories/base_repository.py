@@ -5,6 +5,19 @@ Servisler doğrudan db.session kullanmaz; buradaki metotları çağırır.
 """
 from app.extensions import db
 
+LIKE_ESCAPE = "\\"
+
+
+def contains_pattern(text):
+    """Kullanıcının arama metnini LIKE kalıbına güvenle çevirir (Hafta 11).
+
+    SQL injection zaten parametreli sorgularla engellenir; ancak LIKE içinde % ve _ joker
+    karakterdir. Kaçırılmazsa "%" araması TÜM kayıtları döndürür, "_____" gibi kalıplar
+    tahmin/sıralama saldırılarına ve gereksiz yüke yol açar. Bunları düz karakter yaparız.
+    """
+    escaped = text.replace(LIKE_ESCAPE, LIKE_ESCAPE * 2).replace("%", LIKE_ESCAPE + "%").replace("_", LIKE_ESCAPE + "_")
+    return f"%{escaped}%"
+
 
 class BaseRepository:
     model = None  # Alt sınıf hangi modelle çalıştığını belirtir

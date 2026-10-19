@@ -32,7 +32,7 @@ class Category(BaseModel):
 
     name = db.Column(db.String(60), nullable=False)
     slug = db.Column(db.String(60), unique=True, nullable=False)  # URL için: "kuru-meyve"
-    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
+    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), index=True)
 
     # Kendine bağlı ilişki: Sebze (üst) -> Domates, Biber (alt)
     parent = db.relationship("Category", remote_side="Category.id", back_populates="children")
@@ -57,7 +57,7 @@ class Product(BaseModel):
     producer_id = db.Column(
         db.Integer, db.ForeignKey("producer_profiles.id"), nullable=False, index=True
     )
-    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
     unit = db.Column(db.String(10), default=Unit.KG, nullable=False)
     # Hafta 6'da eklendi. server_default, var olan satırlara da 0 yazılmasını sağlar.

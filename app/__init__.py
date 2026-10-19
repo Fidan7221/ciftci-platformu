@@ -11,8 +11,9 @@ import click
 from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_wtf.csrf import CSRFError
 
-from config import config_by_name
+from config import DEV_SECRET_KEY, config_by_name
 from app.extensions import csrf, db, login_manager, migrate
+from app.security import init_security
 
 
 def create_app(config_name=None):
@@ -21,6 +22,12 @@ def create_app(config_name=None):
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_by_name[config_name])
+
+    # Hafta 11: Üretimde varsayılan / zayıf gizli anahtarla çalışmayı reddet.
+    # SECRET_KEY bilinen bir değerse saldırgan oturum çerezini kendisi imzalayıp istediği kullanıcı olabilir.
+    if config_name == "production" and (app.config["SECRET_KEY"] == DEV_SECRET_KEY
+                                        or len(app.config["SECRET_KEY"] or "") < 32):
+        raise RuntimeError("Üretim ortamında .env içinde en az 32 karakterlik rastgele bir SECRET_KEY tanımlayın.")
 
     # instance/ klasörü yoksa oluştur (SQLite dosyası burada durur)
     os.makedirs(app.instance_path, exist_ok=True)
@@ -34,6 +41,7 @@ def create_app(config_name=None):
     # Modelleri içe aktar: Flask-Migrate tabloları ancak böyle görür
     from app import models  # noqa: F401
 
+    init_security(app)  # Hafta 11: güvenlik başlıkları, CSP nonce, sorgu sayacı
     register_blueprints(app)
     register_error_handlers(app)
     register_template_filters(app)

@@ -129,4 +129,4 @@ def test_listing_form_shows_market_hint(client):
     make_product(profile)
     login(client, "ciftci@test.com")
     page = client.get("/uretici/ilanlar/yeni").get_data(as_text=True)
-    assert "25,00 ₺" in page
+    assert "25,00" in page  # Hafta 11: veri JS'e tojson ile gider; ₺ işareti \u20ba olarak kaçırılır

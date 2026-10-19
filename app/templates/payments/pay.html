@@ -79,7 +79,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce() }}">
   // Çift tıklamayla aynı ödemenin iki kez gönderilmesini önle (sunucu tarafında da idempotency var)
   document.querySelector("form").addEventListener("submit", function () {
     const button = document.getElementById("pay-button");
