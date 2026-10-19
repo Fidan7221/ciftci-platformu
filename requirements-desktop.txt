@@ -1,0 +1,8 @@
+# Masaüstü uygulaması (.exe) derlemek için ek paketler (Hafta 13)
+#   pip install -r requirements-desktop.txt
+-r requirements.txt
+pyinstaller>=6.3,<7
+pillow>=10.0           # ikon üretimi (desktop/make_icon.py)
+
+# İsteğe bağlı: uygulamayı tarayıcı yerine kendi penceresinde açmak için (python desktop_app.py --pencere)
+# pywebview>=5.0

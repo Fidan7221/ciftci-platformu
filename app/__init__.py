@@ -8,29 +8,39 @@ from datetime import timedelta, timezone
 from urllib.parse import urlparse
 
 import click
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, g, redirect, render_template, request, url_for
 from flask_wtf.csrf import CSRFError
 
-from config import DEV_SECRET_KEY, config_by_name
+from config import DEV_SECRET_KEY, STRICT_ENVIRONMENTS, config_by_name
+from app.assets import init_assets
 from app.extensions import csrf, db, login_manager, migrate
+from app.logging_setup import configure_logging
 from app.security import init_security
 
 
-def create_app(config_name=None):
+def create_app(config_name=None, overrides=None, instance_path=None):
+    """overrides: ayarların üzerine yazılacak sözlük (masaüstü uygulaması veri klasörü yollarını böyle verir).
+    instance_path: instance/ klasörünün yeri (masaüstünde paket içi değil, kullanıcının veri klasörü)."""
     if config_name is None:
         config_name = os.environ.get("FLASK_ENV", "development")
+    if config_name not in config_by_name:
+        raise ValueError(f"Bilinmeyen ortam: {config_name!r}. Seçenekler: {', '.join(config_by_name)}")
 
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__, instance_relative_config=True, instance_path=instance_path)
     app.config.from_object(config_by_name[config_name])
+    app.config.update(overrides or {})
+    app.config["ENV_NAME"] = config_name
 
     # Hafta 11: Üretimde varsayılan / zayıf gizli anahtarla çalışmayı reddet.
     # SECRET_KEY bilinen bir değerse saldırgan oturum çerezini kendisi imzalayıp istediği kullanıcı olabilir.
-    if config_name == "production" and (app.config["SECRET_KEY"] == DEV_SECRET_KEY
-                                        or len(app.config["SECRET_KEY"] or "") < 32):
+    if config_name in STRICT_ENVIRONMENTS and (app.config["SECRET_KEY"] == DEV_SECRET_KEY
+                                               or len(app.config["SECRET_KEY"] or "") < 32):
         raise RuntimeError("Üretim ortamında .env içinde en az 32 karakterlik rastgele bir SECRET_KEY tanımlayın.")
 
     # instance/ klasörü yoksa oluştur (SQLite dosyası burada durur)
     os.makedirs(app.instance_path, exist_ok=True)
+
+    configure_logging(app)  # Hafta 13: dosyaya log, istek kimliği
 
     # Eklentileri uygulamaya bağla
     db.init_app(app)
@@ -46,6 +56,7 @@ def create_app(config_name=None):
     register_error_handlers(app)
     register_template_filters(app)
     register_context(app)
+    init_assets(app)        # Hafta 13: Bootstrap/Chart.js yerelde varsa yerel (internetsiz çalışma)
     register_cli_commands(app)
 
     return app
@@ -99,6 +110,7 @@ def register_blueprints(app):
     from app.routes.price_routes import price_bp
     from app.routes.producer_routes import producer_bp
     from app.routes.report_routes import report_bp
+    from app.routes.system_routes import system_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -110,6 +122,7 @@ def register_blueprints(app):
     app.register_blueprint(payment_bp)   # Hafta 9: ödeme
     app.register_blueprint(price_bp)     # Hafta 9: hal fiyatları
     app.register_blueprint(report_bp)    # Hafta 12: satış raporları, CSV/PDF
+    app.register_blueprint(system_bp)    # Hafta 13: /saglik, /medya
 
 
 def register_error_handlers(app):
@@ -146,12 +159,45 @@ def register_error_handlers(app):
     def server_error(error):
         # Yarım kalan bir veri tabanı işlemi sonraki istekleri bozmasın
         db.session.rollback()
-        app.logger.exception("Beklenmeyen sunucu hatası: %s", request.path)
-        return render_template("errors/500.html"), 500
+        # Hata ayrıntısını (traceback) Flask zaten loga yazar; log satırlarında istek kimliği de vardır.
+        # Kullanıcı ekranda yalnızca bu kimliği (hata kodu) görür; iç ayrıntı sızmaz (Hafta 13).
+        app.logger.error("500 yanıtı döndü: %s %s", request.method, request.path)
+        return render_template("errors/500.html", request_id=g.get("request_id")), 500
 
 
 def register_cli_commands(app):
     """Terminalden çalıştırılacak özel komutlar."""
+
+    @app.cli.command("kurulum")
+    @click.option("--demo", is_flag=True, help="Demo hesapları, ürünler, fiyatlar ve siparişler de eklensin")
+    @click.option("--sifirla", is_flag=True, help="ÖNCE TÜM VERİLERİ SİLER (geri alınamaz)")
+    @click.option("--evet", is_flag=True, help="Onay sorusunu atla (betiklerde kullanım için)")
+    def kurulum(demo, sifirla, evet):
+        """Veri tabanını tek komutla hazırlar (Hafta 13).
+
+        \b
+        flask kurulum                  tabloları oluşturur, roller ve kategorileri ekler
+        flask kurulum --demo           + demo verileri (sunum için)
+        flask kurulum --sifirla --demo her şeyi silip temiz bir demo kurar
+        """
+        from app.bootstrap import prepare_database
+        from scripts.demo_data import DEMO_PASSWORD
+
+        if sifirla and not evet:
+            click.confirm(f"'{app.config['SQLALCHEMY_DATABASE_URI']}' içindeki TÜM veriler silinecek. "
+                          "Emin misiniz?", abort=True)
+        result = prepare_database(reset=sifirla, demo=demo, stamp=True)
+        click.echo("Veri tabanı hazır." + (" (önce tüm veriler silindi)" if result["reset"] else ""))
+        if result["created_tables"]:
+            click.echo(f"  Oluşturulan tablo sayısı: {len(result['created_tables'])}")
+        if result["stamped"]:
+            click.echo("  Alembic sürümü 'head' olarak işaretlendi (flask db upgrade ile uyumlu).")
+        click.echo(f"  Kullanıcı: {result['users']} · Kategori: {result['categories']} · "
+                   f"İlan: {result['listings']} · Sipariş: {result['orders']}")
+        if result["demo_accounts"]:
+            click.echo(f"  Demo hesapları (parola: {DEMO_PASSWORD}):")
+            for role, email in result["demo_accounts"].items():
+                click.echo(f"    {role:<10} {email}")
 
     @app.cli.command("seed-db")
     def seed_db():

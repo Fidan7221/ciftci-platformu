@@ -4,6 +4,7 @@ Ayarlar ortama göre üç sınıfa ayrılır:
 - DevelopmentConfig: Geliştirme yaparken (hata ayıklama açık)
 - TestingConfig:     pytest çalışırken (bellekte geçici veri tabanı)
 - ProductionConfig:  Gerçek yayında (hata ayıklama kapalı)
+- DesktopConfig:     Masaüstü uygulaması (.exe) — yalnızca bu bilgisayarda çalışan üretim ayarları (Hafta 13)
 """
 import os
 
@@ -29,7 +30,7 @@ class Config:
     """Tüm ortamların ortak ayarları."""
 
     APP_NAME = "Tarladan Sofraya"
-    APP_VERSION = "0.12.0"  # Git etiketiyle aynı tutulur: v0.12.0
+    APP_VERSION = "0.13.0"  # Git etiketiyle aynı tutulur: v0.13.0
 
     SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
 
@@ -91,6 +92,13 @@ class Config:
     REPORT_MAX_ROWS = 50_000                 # bir raporda en fazla bu kadar sipariş kalemi işlenir
     REPORT_EXPORTS_PER_MIN = 10              # CSV/PDF indirme sınırı (kullanıcı başına, dakikada)
 
+    # --- Log ve izleme (Hafta 13) ---
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+    LOG_TO_FILE = False                      # True: LOG_DIR/uygulama.log (1 MB x 5 dosya, dönerek)
+    LOG_DIR = os.environ.get("LOG_DIR") or os.path.join(BASE_DIR, "logs")
+    LOG_REQUESTS = False                     # True: her isteğin yöntemi, yolu, durumu ve süresi loglanır
+    VENDOR_ASSETS = "auto"                   # auto: static/vendor içinde varsa yerel, yoksa CDN (Hafta 13)
+
     # --- Yapay zekâ: fiyat tahmini (Hafta 10) ----------------------------------------------
     AI_FORECAST_HORIZON_DAYS = 7      # kaç gün sonrası tahmin edilir
     AI_WINDOW_DAYS = 30               # model son kaç günün verisiyle eğitilir
@@ -117,10 +125,30 @@ class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True   # Çerez yalnızca HTTPS üzerinden gönderilir
     REMEMBER_COOKIE_SECURE = True
+    LOG_TO_FILE = True
+    LOG_REQUESTS = True
+
+
+class DesktopConfig(ProductionConfig):
+    """Masaüstü uygulaması (Hafta 13).
+
+    Sunucu yalnızca 127.0.0.1'de (bu bilgisayarda) dinler; dışarıdan erişilemez. Tarayıcı ile sunucu arasında
+    HTTPS olmadığı için "Secure" çerez kullanılamaz (yoksa giriş yapılamaz) — yerel bağlantı ağdan geçmez.
+    Veri tabanı, yüklenen görseller, loglar ve gizli anahtar kullanıcının veri klasöründe tutulur;
+    bu yollar desktop/launcher.py tarafından create_app(..., overrides=...) ile verilir.
+    """
+    SESSION_COOKIE_SECURE = False
+    REMEMBER_COOKIE_SECURE = False
+    USE_MOCK_APIS = True           # Sunumda internet olmasa da fiyat ve ödeme ekranları çalışsın
+    LOG_REQUESTS = False           # Tek kullanıcı; her isteği loglamak dosyayı gereksiz büyütür
 
 
 config_by_name = {
     "development": DevelopmentConfig,
     "testing": TestingConfig,
     "production": ProductionConfig,
+    "desktop": DesktopConfig,
 }
+
+# Bu ortamlarda zayıf / varsayılan SECRET_KEY ile uygulama başlamaz (Hafta 11, 13)
+STRICT_ENVIRONMENTS = ("production", "desktop")

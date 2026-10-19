@@ -1,4 +1,4 @@
-# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 12)
+# Yapay Zekâ Kullanım Günlüğü (güncel: Hafta 13 — Final)
 
 **Kullanılan araç:** Claude (Anthropic), claude.ai sohbet arayüzü
 **Kullanım biçimi:** Her hafta için gereksinimler istem olarak verildi; yapay zekâ kod, test ve açıklama üretti.
@@ -7,7 +7,8 @@ Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırı
 > Not: Yapay zekânın çalıştığı ortamda paket deposuna erişim kapalıydı; bu yüzden üretilen kodu orada
 > çoğunlukla çalıştıramadı, sözdizimi ve statik analiz kontrolü yaptı. (Hafta 9'da harici API katmanının
 > 23 testi, Hafta 10'da tahmin algoritmasının 20 testi, Hafta 12'de arama/rapor birim testlerinin 62'si
-> ve yeni şablonların örnek verilerle çizimi orada da gerçekten çalıştırıldı.) Tüm "geçti" sonuçları benim
+> ve yeni şablonların örnek verilerle çizimi; Hafta 13'te masaüstü başlatıcısının sunucu/port/tek kopya
+> testleri orada da gerçekten çalıştırıldı. .exe derlemesi orada yapılamadı: PyInstaller kurulamadı.) Tüm "geçti" sonuçları benim
 > bilgisayarımdaki `pytest` çıktısıdır.
 >
 > `[ ]` ile işaretli alanları kendi deneyiminize göre doldurun. Hoca bu bölümde sizin ne
@@ -26,6 +27,7 @@ Kod VS Code'da projeye eklendi, testler **kendi bilgisayarımda** çalıştırı
 | 19.10.2026 | 10 | Fiyat tahmini ve trend analizi | Doğrusal regresyon modeli, geri test, güven skoru, öneri kuralları, tahmin kaydı, grafik kartları, model kartı, 32 test | [ ] Model seçimi (neden doğrusal regresyon) ve öneri kurallarındaki prim oranlarını kendim değerlendirdim mi? | [ ] / 183 test |
 | 19.10.2026 | 11 | Güvenlik, ince yetkilendirme, performans | Güvenlik denetimi (CSRF/XSS/SQLi/IDOR), CSP nonce + güvenlik başlıkları, LIKE joker kaçışı, hesap kilitleme ve hız sınırları, indeksler, N+1 düzeltmeleri (selectinload/joinedload/contains_eager), sorgu sayacı, `docs/GUVENLIK_DENETIMI.md`, 41 güvenlik testi | [ ] | [ ] / 224 test |
 | 19.10.2026 | 12 | Gelişmiş filtreleme/arama, raporlama, CSV/PDF | Filtre nesnesi, Türkçe duyarsız arama (`tr_fold`), il/ilçe dizini, sıralamalar, rapor servisi (tek sorgu + Python'da hesap), CSV (BOM, formül enjeksiyonu koruması), PDF (ReportLab, gömülü yazı tipi), demo siparişleri, 96 test | [ ] | [ ] / 320 test |
+| 19.10.2026 | 13 | Dağıtım, paketleme, masaüstü uygulaması, final belgeleri | Log/istek kimliği, /saglik, /medya, `flask kurulum`, DesktopConfig, masaüstü başlatıcısı (waitress, tek kopya, kontrol penceresi), PyInstaller derleme betiği, ikon, final raporu ve sözlü hazırlık, 33 test | [ ] .exe'yi kendi bilgisayarımda derleyip denedim mi? | [ ] / 353 test |
 
 ## Yapay zekânın hataları ve nasıl yakalandığı
 
@@ -46,6 +48,8 @@ bir kısmı ise teslim edilen koda girdi ve Hafta 8 entegrasyon taramasında bul
 | 12 | Tarih aralığında "önce kırp, sonra yer değiştir" sırası geleceğe taşan bir dönem üretebiliyordu | Teslim öncesi kontrol (yapay zekâ) | Önce yer değiştirme, sonra bugüne kırpma |
 | 12 | PDF'i üretmek için gereken `reportlab` paketi `requirements.txt`'e eklenmemişti | Teslim öncesi kontrol (yapay zekâ) | Eklendi |
 | 12 | `test_search.py` ilanın görünüp görünmediğini tüm sayfa metninde arıyordu; "Petek Bal" aynı zamanda bir kategori adı olduğu için filtre panelinde her zaman bulunuyordu → 13 test yanlışlıkla başarısız oldu (uygulama kodu doğruydu) | Teslim edilen koddaydı; **benim bilgisayarımda pytest** (13 failed) | Testler artık yalnızca ilan kartlarının başlıklarını okuyor |
+| 13 | Alembic `stamp` işlemi `logging.config.fileConfig()` çağırdığı için masaüstü başlatıcısının loglarını kapatacaktı | Teslim öncesi kontrol (yapay zekâ) | İşaretleme yalnızca `flask kurulum` komutunda yapılıyor |
+| 13 | Bootstrap/Chart.js CDN'den yüklendiği için .exe internetsiz açılınca sayfalar stilsiz olacaktı | Teslim öncesi kontrol (yapay zekâ) | Yerel kopya + `vendor_url()`; derleme betiği dosyaları indiriyor |
 | [ ] | [Kendi bulduğunuz hatalar] | [ ] | [ ] |
 
 ## Öğrendiklerim / yapay zekânın sınırları

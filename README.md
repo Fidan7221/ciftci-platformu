@@ -3,7 +3,10 @@
 Bingöl Üniversitesi Bilgisayar Programcılığı dönem projesi.
 Çiftçilerin ürünlerini aracısız satabildiği, müşterilerin doğrudan üreticiden alışveriş yaptığı bir pazar yeri.
 
-**Sürüm:** `v0.12.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5, scikit-learn, Chart.js, ReportLab
+**Sürüm:** `v0.13.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5, scikit-learn, Chart.js, ReportLab, waitress, PyInstaller
+
+> **Masaüstü uygulaması:** `python build_exe.py --kisayol` → masaüstündeki ikona çift tıklayın. Ayrıntılar: [`docs/MASAUSTU_KILAVUZU.md`](docs/MASAUSTU_KILAVUZU.md)
+> **Final:** [`docs/FINAL_RAPORU.md`](docs/FINAL_RAPORU.md) · [`docs/FINAL_SOZLU_HAZIRLIK.md`](docs/FINAL_SOZLU_HAZIRLIK.md)
 
 ## Kurulum
 
@@ -12,9 +15,11 @@ python -m venv venv
 venv\Scripts\Activate.ps1          # Windows  (macOS/Linux: source venv/bin/activate)
 pip install -r requirements.txt
 copy .env.example .env             # macOS/Linux: cp .env.example .env  → SECRET_KEY değerini doldurun
-flask db upgrade                   # tabloları oluşturur
-flask seed-demo                    # roller, kategoriler, demo verileri, 60 günlük hal fiyatı, AI tahminleri, 45 günlük demo siparişleri
-python run.py                      # http://127.0.0.1:5000
+flask kurulum --demo               # TEK KOMUT: tablolar, roller, kategoriler, demo hesapları, fiyatlar, AI tahminleri, siparişler
+python run.py                      # http://127.0.0.1:5000   (geliştirme sunucusu)
+
+# Temiz başlangıç (TÜM verileri siler, onay ister):  flask kurulum --sifirla --demo
+# Mevcut bir veri tabanını güncellemek için:          flask db upgrade
 ```
 
 ## Demo hesapları
@@ -32,7 +37,7 @@ Tüm hesapların parolası: `Demo12345`
 ## Testler
 
 ```bash
-pytest -v          # 320 test (internete çıkmaz; harici API'ler taklit edilir)
+pytest -v          # 353 test (internete çıkmaz; harici API'ler taklit edilir)
 ```
 
 | Dosya | Kapsam |
@@ -47,6 +52,7 @@ pytest -v          # 320 test (internete çıkmaz; harici API'ler taklit edilir)
 | `test_ai.py` | Tahmin algoritması (bilinen serilerle), öneri kuralları, tahmin kaydı, panellerdeki kartlar |
 | `test_search.py` | Türkçe duyarsız arama, il/ilçe, fiyat aralığı, organik, doğrulanmış üretici, sıralamalar, sayfalama |
 | `test_reports.py` | Dönem seçimi, ciro hesabı, saat dilimi sınırı, rol/IDOR kapsamı, CSV (BOM, formül enjeksiyonu), PDF |
+| `test_deployment.py` | Log ve istek kimliği, 500 sayfası, `/saglik`, `flask kurulum`, `/medya`, masaüstü başlatıcısı (gerçek sunucu), .exe derleme argümanları |
 | `test_security.py` | Güvenlik başlıkları/CSP, XSS, SQL injection, CSRF, IDOR (404), rol ihlali (403), toplu atama, brute force ve hız sınırları, N+1 sorgu sayısı, indeksler |
 
 ## Mimari
@@ -62,14 +68,18 @@ app/
 ├── ai/             # Yapay zekâ: trend_model (tahmin), sell_advisor (öneri) — Flask'tan bağımsız (Hafta 10)
 ├── integrations/   # Harici API'ler: http_client, price_api, payment_gateway (Hafta 9)
 ├── reports/        # Rapor dönemi, hesaplama, CSV ve PDF üretimi — veritabanından bağımsız (Hafta 12)
+├── bootstrap.py    # Veri tabanını tek adımda hazırlama (flask kurulum + masaüstü) (Hafta 13)
+├── logging_setup.py  # Dönen log dosyaları, istek kimliği (Hafta 13)
 ├── repositories/   # Tüm sorgular; atomik stok güncellemeleri
 ├── services/       # İş kuralları (auth, producer, category, listing, cart, order, payment, price, prediction, search, report)
-├── routes/         # Blueprint'ler: main, auth, producer, admin, market, cart, orders, payments, prices, reports
+├── routes/         # Blueprint'ler: main, auth, producer, admin, market, cart, orders, payments, prices, reports, system
 ├── forms/          # Flask-WTF formları (CSRF + doğrulama)
 ├── utils/          # Dekoratörler (@role_required), görsel yükleme, biçimlendirme, Türkçe arama, pazar filtresi
 ├── templates/      # Jinja2 + Bootstrap 5
 └── static/
-scripts/            # seed_data.py (roller, kategoriler), demo_data.py (vize demosu)
+scripts/            # seed_data.py, demo_data.py, download_assets.py (Bootstrap/Chart.js yerel kopyası)
+desktop/            # Masaüstü başlatıcısı, kontrol penceresi, ikon (Hafta 13)
+desktop_app.py      # Masaüstü giriş noktası · build_exe.py: PyInstaller ile .exe
 tests/              # pytest
 docs/               # Vize raporu, AI kullanım günlüğü, sözlü sınav hazırlığı
 ```
@@ -78,6 +88,7 @@ docs/               # Vize raporu, AI kullanım günlüğü, sözlü sınav haz�
 
 | Komut | Açıklama |
 |---|---|
+| `flask kurulum [--demo] [--sifirla]` | Veri tabanını tek komutla hazırlar (Hafta 13) |
 | `flask seed-db` | Yalnızca rolleri ve kategorileri ekler |
 | `flask seed-demo` | Demo hesapları, ürünleri, ilanları ve siparişleri ekler (tekrar çalıştırılabilir) |
 | `flask create-admin` | Yeni yönetici hesabı açar |
@@ -141,3 +152,17 @@ pip install -r requirements.txt
 flask db migrate -m "hafta 12 rapor indeksi"
 flask db upgrade
 ```
+
+## Dağıtım ve masaüstü uygulaması (Hafta 13)
+
+| Konu | Nasıl |
+|---|---|
+| Üretim sunucusu | `FLASK_ENV=production` + `.env` içinde ≥ 32 karakter `SECRET_KEY`, sonra `waitress-serve --host 127.0.0.1 --port 8000 --call app:create_app` |
+| Log | `logs/uygulama.log` (1 MB × 5); her satırda istek kimliği; 500 sayfası yalnızca "hata kodu" gösterir |
+| Sağlık kontrolü | `GET /saglik` → 200 / 503 |
+| İnternetsiz ön yüz | `python scripts/download_assets.py` (Bootstrap, ikonlar, Chart.js → `app/static/vendor/`) |
+| Masaüstü (geliştirirken) | `python desktop_app.py` (kontrol penceresi + tarayıcı), `--pencere` (pywebview), `--sifirla` |
+| .exe | `pip install -r requirements-desktop.txt` → `python build_exe.py --kisayol` → `dist/TarladanSofraya/TarladanSofraya.exe` |
+
+Masaüstü verileri: `%LOCALAPPDATA%\TarladanSofraya\` (veri.db, uploads, logs, gizli anahtar).
+Hafta 13'te şema değişikliği yoktur (migration gerekmez); yalnızca `pip install -r requirements.txt` (waitress).

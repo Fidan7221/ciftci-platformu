@@ -20,3 +20,6 @@ scikit-learn>=1.5
 
 # --- Raporlama: PDF dışa aktarma (Hafta 12) ---
 reportlab>=4.0,<6.0
+
+# --- Üretim sunucusu (Hafta 13): Windows'ta da çalışan, saf Python WSGI sunucusu ---
+waitress>=3.0,<4.0

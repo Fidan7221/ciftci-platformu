@@ -2,6 +2,29 @@
 
 Sürüm numaraları [Semantic Versioning](https://semver.org/lang/tr/) kuralına uyar: `ANA.ARA.YAMA[-ön-sürüm]`.
 
+## [0.13.0] — 2026-10-19 · Dağıtım, paketleme ve masaüstü uygulaması (Final)
+
+### Eklendi
+- Masaüstü uygulaması: `desktop_app.py`, `desktop/launcher.py` (veri klasörü, tek kopya kontrolü, gizli anahtar
+  üretimi, boş port, yalnızca 127.0.0.1, waitress sunucusu, düzgün kapanış), `desktop/control_window.py`
+  (tkinter kontrol penceresi), isteğe bağlı pywebview penceresi.
+- `build_exe.py`: PyInstaller ile .exe (klasör / tek dosya, konsollu hata ayıklama, masaüstü kısayolu);
+  kullanıcı yüklemeleri ve `.env` pakete girmez. `requirements-desktop.txt`.
+- Uygulama ikonu (`desktop/make_icon.py`, `icon.ico`, `icon.png`, `favicon.png`).
+- `DesktopConfig` ve `create_app(config_name, overrides, instance_path)`; bilinmeyen ortam adı hata verir.
+- Log: dönen dosyalar (`logs/uygulama.log`, 1 MB × 5), istek kimliği (`X-Request-ID`), istek logu (üretim);
+  500 sayfasında hata kodu.
+- `GET /saglik` sağlık kontrolü; `GET /medya/<dosya>` (yüklemeler statik dosyalardan ayrıldı).
+- `flask kurulum [--demo] [--sifirla] [--evet]`: veri tabanını tek komutla hazırlar (`app/bootstrap.py`).
+- Ön yüz kütüphanelerinin yerel kopyası: `scripts/download_assets.py`, `app/assets.py` (`vendor_url()`).
+- `docs/FINAL_RAPORU.md`, `docs/FINAL_SOZLU_HAZIRLIK.md`, `docs/MASAUSTU_KILAVUZU.md`.
+- `tests/test_deployment.py` (33 test, gerçek sunucuyla uçtan uca başlatıcı testi dahil) — toplam 353.
+
+### Değişti
+- `requirements.txt`: `waitress`. `.gitignore`: `logs/`, `build/`, `dist/`, `*.spec`.
+- Ürün görselleri `/static/uploads/` yerine `/medya/` adresinden verilir (dosyaların yeri değişmedi).
+- `base.html`: Bootstrap / Chart.js adresleri `vendor_url()` ile (yerelde varsa yerel, yoksa CDN).
+
 ## [0.12.0] — 2026-10-19 · Gelişmiş arama, raporlama ve dışa aktarma
 
 ### Eklendi

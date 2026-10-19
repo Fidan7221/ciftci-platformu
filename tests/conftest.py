@@ -19,6 +19,16 @@ def app(tmp_path):
         db.drop_all()
 
 
+@pytest.fixture(autouse=True)
+def _close_file_logs():
+    """Hafta 13: Bir test üretim/masaüstü uygulaması kurarsa (dosyaya log yazan), dosya handler'ı
+    sonraki testlere sızmasın ve proje klasöründe logs/ oluşmasın."""
+    yield
+    import logging
+    from app.logging_setup import _remove_our_handlers
+    _remove_our_handlers(logging.getLogger("app"))
+
+
 @pytest.fixture
 def client(app):
     return app.test_client()

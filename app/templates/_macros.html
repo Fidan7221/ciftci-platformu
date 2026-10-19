@@ -67,7 +67,7 @@
 {# Ürün görseli ya da yer tutucu #}
 {% macro product_image(product, css_class="product-thumb") %}
   {% if product.image_path %}
-    <img src="{{ url_for('static', filename='uploads/' ~ product.image_path) }}"
+    <img src="{{ url_for('system.media', filename=product.image_path) }}"
          alt="{{ product.name }}" class="{{ css_class }}" loading="lazy">
   {% else %}
     <div class="{{ css_class }} product-thumb-empty"><i class="bi bi-image"></i></div>

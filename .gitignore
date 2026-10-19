@@ -30,3 +30,11 @@ app/static/uploads/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Log dosyaları (Hafta 13)
+logs/
+
+# PyInstaller derleme çıktıları (Hafta 13) — .exe GitHub'a değil, "Releases" bölümüne yüklenir
+build/
+dist/
+*.spec
