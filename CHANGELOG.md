@@ -2,6 +2,27 @@
 
 Sürüm numaraları [Semantic Versioning](https://semver.org/lang/tr/) kuralına uyar: `ANA.ARA.YAMA[-ön-sürüm]`.
 
+## [0.12.0] — 2026-10-19 · Gelişmiş arama, raporlama ve dışa aktarma
+
+### Eklendi
+- Pazar yerinde çoklu filtre: kategori (alt kategorilerle), il/ilçe, fiyat aralığı, organik, doğrulanmış üretici;
+  sıralama: en ilgili, en yeni, fiyat artan/azalan, en çok değerlendirilen, en yüksek puan. Seçili filtre etiketleri.
+- Türkçe duyarsız metin araması: SQLite'a `tr_fold()` fonksiyonu (`app/utils/text.py`, `app/extensions.py`);
+  ilan, ürün, açıklama, çiftlik, bölge ve kategoride; çok kelimede her kelime eşleşmeli.
+- `MarketFilter` ve `RegionIndex` (`app/utils/market_filter.py`), `search_service`.
+- Üretici "İlanlarım" sayfasında arama ve sıralama.
+- Raporlar (`/raporlar/`): `report_service`, `ReportRepository` (tek sorgu), `app/reports/` (dönem, hesaplama,
+  CSV, PDF). Üretici kendi, yönetici tüm platform verisini görür.
+- CSV (UTF-8 BOM, `;`, formül enjeksiyonu koruması) ve PDF (ReportLab, DejaVu Sans gömülü, grafik) dışa aktarma.
+- `orders.created_at` indeksi (migration gerekir), `REPORT_MAX_ROWS`, `REPORT_EXPORTS_PER_MIN` ayarları.
+- `seed-demo`: ikinci demo müşteri ve son 45 güne yayılmış demo siparişleri (gerçek sipariş akışıyla).
+- `docs/ARAMA_VE_RAPORLAMA.md`, `tests/test_search.py` (48), `tests/test_reports.py` (48) — toplam 320.
+
+### Değişti
+- `rate_limited` artık `methods` parametresi alır (indirmeler GET olduğu için).
+- `requirements.txt`: `reportlab`.
+- Pazar sayfası yeni düzen: solda filtre paneli (mobilde katlanır), sağda arama ve sonuçlar.
+
 ## [0.11.0] — 2026-10-19 · Güvenlik, ince yetkilendirme ve performans
 
 ### Eklendi

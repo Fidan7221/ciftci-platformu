@@ -17,3 +17,6 @@ pytest-flask>=1.3,<2.0
 # --- Yapay zekâ (Hafta 10) ---
 numpy>=1.26
 scikit-learn>=1.5
+
+# --- Raporlama: PDF dışa aktarma (Hafta 12) ---
+reportlab>=4.0,<6.0

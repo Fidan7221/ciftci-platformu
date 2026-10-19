@@ -70,17 +70,18 @@ def get_limiter(name, limit, period):
     return limiters[name]
 
 
-def rate_limited(name, limit_config_key, period):
+def rate_limited(name, limit_config_key, period, methods=("POST",)):
     """Rota dekoratörü: kullanıcı başına (giriş yoksa IP başına) istek sınırı.
 
-    Yalnızca POST istekleri sayılır; sayfayı görüntülemek serbesttir.
+    Varsayılan olarak yalnızca POST istekleri sayılır; sayfayı görüntülemek serbesttir.
+    Hafta 12: Ağır GET işlemleri (PDF/CSV üretimi) için methods=("GET",) verilebilir.
     Sınır aşılırsa 429 Too Many Requests + Retry-After başlığı döner.
     """
 
     def decorator(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
-            if request.method == "POST":
+            if request.method in methods:
                 limiter = get_limiter(name, current_app.config[limit_config_key], period)
                 key = f"user:{current_user.id}" if current_user.is_authenticated else f"ip:{request.remote_addr}"
                 if not limiter.hit(key):

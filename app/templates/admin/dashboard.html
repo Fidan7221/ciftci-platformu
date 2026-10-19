@@ -26,14 +26,21 @@
   </div>
 
   <div class="row g-3">
-    <div class="col-md-6">
+    <div class="col-md-4">
       <a href="{{ url_for('admin.orders') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
         <i class="bi bi-receipt fs-3 text-farm"></i>
         <div class="fw-semibold mt-2">Tüm siparişler</div>
         <div class="small text-muted">Durum filtreleyerek izle; gerekirse müdahale et</div>
       </div></a>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
+      <a href="{{ url_for('reports.index') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
+        <i class="bi bi-file-earmark-bar-graph fs-3 text-farm"></i>
+        <div class="fw-semibold mt-2">Satış raporları</div>
+        <div class="small text-muted">Tarih aralıklı ciro ve sipariş özeti; CSV / PDF indir</div>
+      </div></a>
+    </div>
+    <div class="col-md-4">
       <a href="{{ url_for('admin.categories') }}" class="card stat-card text-decoration-none text-reset h-100"><div class="card-body">
         <i class="bi bi-diagram-3 fs-3 text-farm"></i>
         <div class="fw-semibold mt-2">Kategori yönetimi</div>

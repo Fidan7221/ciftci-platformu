@@ -57,6 +57,9 @@ def register_template_filters(app):
     # Şablonda: {{ urun.stock_quantity|qty }} -> "12,5"   {{ siparis.total_amount|money }} -> "1.234,50 ₺"
     app.add_template_filter(format_qty, "qty")
     app.add_template_filter(format_money, "money")
+    # Hafta 12: Türkçe duyarsız karşılaştırma  {{ "BİNGÖL"|fold }} -> "bingol"
+    from app.utils.text import fold
+    app.add_template_filter(fold, "fold")
 
     local_tz = timezone(timedelta(hours=app.config.get("DISPLAY_UTC_OFFSET_HOURS", 3)))
 
@@ -95,6 +98,7 @@ def register_blueprints(app):
     from app.routes.payment_routes import payment_bp
     from app.routes.price_routes import price_bp
     from app.routes.producer_routes import producer_bp
+    from app.routes.report_routes import report_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -105,6 +109,7 @@ def register_blueprints(app):
     app.register_blueprint(order_bp)     # Hafta 7: siparişler
     app.register_blueprint(payment_bp)   # Hafta 9: ödeme
     app.register_blueprint(price_bp)     # Hafta 9: hal fiyatları
+    app.register_blueprint(report_bp)    # Hafta 12: satış raporları, CSV/PDF
 
 
 def register_error_handlers(app):

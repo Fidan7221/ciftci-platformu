@@ -40,11 +40,13 @@
             {{ nav_item("producer.products", "Ürünlerim", "box-seam") }}
             {{ nav_item("producer.listings", "İlanlarım", "megaphone") }}
             {{ nav_item("producer.orders", "Gelen Siparişler", "inbox") }}
+            {{ nav_item("reports.index", "Raporlar", "file-earmark-bar-graph", "reports.") }}
           {% elif current_user.is_authenticated and current_user.is_customer %}
             {{ nav_item("orders.my_orders", "Siparişlerim", "bag-check") }}
           {% elif current_user.is_authenticated and current_user.is_admin %}
             {{ nav_item("admin.orders", "Siparişler", "receipt") }}
             {{ nav_item("admin.categories", "Kategoriler", "diagram-3") }}
+            {{ nav_item("reports.index", "Raporlar", "file-earmark-bar-graph", "reports.") }}
           {% endif %}
         </ul>
 
@@ -119,6 +121,7 @@
   <!-- Hafta 10: fiyat tahmini grafikleri -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
   <script src="{{ url_for('static', filename='js/price_chart.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/report_chart.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
   {% block scripts %}{% endblock %}
 </body>

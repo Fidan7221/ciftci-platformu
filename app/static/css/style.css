@@ -154,3 +154,15 @@ body { background: #f6f8f4; }
 .advice-low_confidence { border-left-color: #adb5bd; }
 .bg-farm { background-color: var(--farm) !important; }
 .ai-suggestion { background: var(--farm-soft); border: 1px dashed var(--farm); border-radius: .5rem; }
+
+/* Hafta 12: pazar filtreleri ve raporlar */
+@media (min-width: 992px) { .filter-panel { position: sticky; top: 1rem; } }
+.filter-chip { background: var(--farm-soft); color: var(--farm-dark); border: 1px solid rgba(47, 125, 50, .25);
+               font-weight: 500; padding: .45em .8em; }
+.filter-chip:hover { background: #dcedd8; }
+.report-kpi .kpi-value { font-size: 1.5rem; font-weight: 700; }
+.report-chart-box { position: relative; height: 260px; }
+.table-report td, .table-report th { white-space: nowrap; }
+@media print {
+  .navbar, footer, .no-print { display: none !important; }
+}

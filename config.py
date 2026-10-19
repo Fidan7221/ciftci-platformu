@@ -29,7 +29,7 @@ class Config:
     """Tüm ortamların ortak ayarları."""
 
     APP_NAME = "Tarladan Sofraya"
-    APP_VERSION = "0.11.0"  # Git etiketiyle aynı tutulur: v0.11.0
+    APP_VERSION = "0.12.0"  # Git etiketiyle aynı tutulur: v0.12.0
 
     SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
 
@@ -86,6 +86,10 @@ class Config:
     REGISTRATIONS_PER_IP_PER_HOUR = 10       # sahte hesap açma (spam) sınırı
     CART_ADDS_PER_MIN = 30                   # sepete ekleme isteği sınırı
     QUERY_COUNT_HEADER = False               # True: her yanıta X-Query-Count (N+1 takibi)
+
+    # --- Raporlama (Hafta 12) ---
+    REPORT_MAX_ROWS = 50_000                 # bir raporda en fazla bu kadar sipariş kalemi işlenir
+    REPORT_EXPORTS_PER_MIN = 10              # CSV/PDF indirme sınırı (kullanıcı başına, dakikada)
 
     # --- Yapay zekâ: fiyat tahmini (Hafta 10) ----------------------------------------------
     AI_FORECAST_HORIZON_DAYS = 7      # kaç gün sonrası tahmin edilir

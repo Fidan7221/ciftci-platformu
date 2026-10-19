@@ -12,9 +12,10 @@ from flask import current_app
 
 from app.models import Listing, ListingStatus
 from app.repositories.listing_repository import ListingRepository
-from app.repositories.product_repository import CategoryRepository, ProductRepository
+from app.repositories.product_repository import ProductRepository
 from app.services.errors import ServiceError
 from app.utils.formatting import format_qty
+from app.utils.text import search_tokens
 
 
 # --- Sorgular ---------------------------------------------------------------
@@ -29,23 +30,12 @@ def get_owned_listing(profile, listing_id):
     return ListingRepository.get_for_producer(listing_id, profile.id)
 
 
-def list_producer_listings(profile, status=None, page=1):
+def list_producer_listings(profile, status=None, page=1, search=None, sort="yeni"):
     if status not in ListingStatus.ALL:
         status = None
     return ListingRepository.paginate_for_producer(
-        profile.id, status, page, current_app.config.get("ITEMS_PER_PAGE", 12))
-
-
-def list_market(search=None, category_id=None, page=1):
-    """Pazar vitrini. Üst kategori seçilirse alt kategorilerindeki ilanlar da gelir."""
-    category_ids = None
-    if category_id:
-        category = CategoryRepository.get_by_id(category_id)
-        if category is not None:
-            category_ids = [category.id] + [c.id for c in category.children]
-    search = (search or "").strip() or None
-    return ListingRepository.paginate_available(
-        search, category_ids, page, current_app.config.get("ITEMS_PER_PAGE", 12))
+        profile.id, status, page, current_app.config.get("ITEMS_PER_PAGE", 12),
+        tokens=search_tokens(search), sort=sort)
 
 
 def get_public_listing(listing_id):

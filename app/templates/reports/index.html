@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}Raporlar{% endblock %}
+
+{% macro pct(value) %}%{{ value|qty }}{% endmacro %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+    <div>
+      <h1 class="h3 fw-bold mb-1"><i class="bi bi-file-earmark-bar-graph text-farm"></i> Satış ve Sipariş Raporu</h1>
+      <p class="text-muted mb-0">
+        {{ scope.label }}{% if report %} · {{ report.period.label }}{% endif %}
+      </p>
+    </div>
+    {% if report %}
+      <div class="d-flex gap-2 no-print">
+        <a class="btn btn-outline-danger" href="{{ url_for('reports.download', fmt='pdf', **args) }}">
+          <i class="bi bi-filetype-pdf"></i> PDF indir
+        </a>
+        <div class="dropdown">
+          <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-filetype-csv"></i> CSV indir
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {% for key, label in export_tables.items() %}
+              <li><a class="dropdown-item" href="{{ url_for('reports.download', fmt='csv', tablo=key, **args) }}">{{ label }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {# --- Dönem seçimi --- #}
+  <div class="card border-0 shadow-sm mb-4 no-print">
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-2 mb-3" aria-label="Hazır dönemler">
+        {% for key, label in presets.items() %}
+          {% set active = report and report.period.preset == key %}
+          <a class="btn btn-sm {{ 'btn-farm' if active else 'btn-outline-secondary' }}"
+             href="{{ url_for('reports.index', donem=key, **scope.to_args()) }}"
+             {% if active %}aria-current="true"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </div>
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-sm-6 col-lg-3">
+          <label for="r-baslangic" class="form-label small fw-semibold">Başlangıç</label>
+          <input type="date" id="r-baslangic" name="baslangic" class="form-control form-control-sm" max="{{ max_date }}"
+                 value="{{ report.period.start.isoformat() if report }}" required>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <label for="r-bitis" class="form-label small fw-semibold">Bitiş</label>
+          <input type="date" id="r-bitis" name="bitis" class="form-control form-control-sm" max="{{ max_date }}"
+                 value="{{ report.period.end.isoformat() if report }}" required>
+        </div>
+        {% if scope.is_admin %}
+          <div class="col-sm-8 col-lg-4">
+            <label for="r-uretici" class="form-label small fw-semibold">Üretici</label>
+            <select id="r-uretici" name="uretici" class="form-select form-select-sm">
+              <option value="">Tüm platform</option>
+              {% for producer_id, farm_name in producers %}
+                <option value="{{ producer_id }}" {{ 'selected' if scope.producer and scope.producer.id == producer_id }}>{{ farm_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        {% endif %}
+        <div class="col-sm-4 col-lg-2 d-grid">
+          <button class="btn btn-farm btn-sm" type="submit"><i class="bi bi-arrow-repeat"></i> Göster</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if report %}
+    {% for note in report.notes %}
+      <div class="alert alert-info py-2 small"><i class="bi bi-info-circle"></i> {{ note }}</div>
+    {% endfor %}
+
+    {% set s = report.summary %}
+    <div class="row g-3 mb-4">
+      {% for label, value, icon, hint in [
+          ("Ciro", s.revenue|money, "cash-coin", "Ödenmiş, kargodaki ve teslim edilen"),
+          ("Satış", s.order_count ~ " sipariş", "bag-check", s.customer_count ~ " farklı müşteri"),
+          ("Ortalama sipariş", s.average_order|money, "receipt", "Ciro ÷ satış"),
+          ("Ödeme bekleyen", s.pending_count ~ " sipariş", "hourglass-split", s.pending_amount|money),
+          ("İptal", s.cancelled_count ~ " sipariş", "x-circle", pct(s.cancel_rate) ~ " iptal oranı"),
+        ] %}
+        <div class="col-6 col-lg">
+          <div class="card stat-card report-kpi h-100"><div class="card-body">
+            <div class="text-muted small"><i class="bi bi-{{ icon }}"></i> {{ label }}</div>
+            <div class="kpi-value">{{ value }}</div>
+            <div class="small text-muted">{{ hint }}</div>
+          </div></div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if report.is_empty %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox display-5 d-block mb-2"></i>
+        Bu dönemde sipariş yok. Farklı bir dönem seçmeyi deneyin.
+      </div>
+    {% else %}
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Dönem cirosu ({{ 'günlük' if report.period.granularity == 'day' else 'aylık' }})</h2>
+            <div class="report-chart-box">
+              <canvas data-report-chart="rapor-grafik-veri" role="img"
+                      aria-label="Dönem cirosu ve sipariş sayısı grafiği"></canvas>
+            </div>
+            <script type="application/json" id="rapor-grafik-veri">{{ chart|tojson }}</script>
+          </div></div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">Sipariş durumları</h2>
+            <table class="table table-sm mb-0">
+              <tbody>
+                {% for status, label, count, amount in report.statuses %}
+                  <tr>
+                    <td>{{ label }}</td>
+                    <td class="text-end">{{ count }}</td>
+                    <td class="text-end text-muted">{{ amount|money }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="{{ 'col-lg-7' if report.categories else 'col-12' }}">
+          <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 fw-semibold mb-3">En çok satan ürünler</h2>
+            {% if report.products %}
+              <div class="table-responsive">
+                <table class="table table-sm align-middle table-report mb-0">
+                  <thead class="table-light"><tr>
+                    <th>Ürün</th>{% if report.is_admin %}<th>Üretici</th>{% endif %}
+                    <th class="text-end">Miktar</th><th class="text-end">Sipariş</th>
+                    <th class="text-end">Ciro</th><th class="text-end">Pay</th>
+                  </tr></thead>
+                  <tbody>
+                    {% for p in report.products %}
+                      <tr>
+                        <td>{{ p.name }}</td>{% if report.is_admin %}<td class="text-muted">{{ p.farm_name }}</td>{% endif %}
+                        <td class="text-end">{{ p.quantity|qty }} {{ p.unit }}</td>
+                        <td class="text-end">{{ p.order_count }}</td>
+                        <td class="text-end fw-semibold">{{ p.revenue|money }}</td>
+                        <td class="text-end text-muted">{{ pct(p.share) }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted small mb-0">Bu dönemde ciroya giren satış yok.</p>
+            {% endif %}
+          </div></div>
+        </div>
+        {% if report.categories %}
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+              <h2 class="h6 fw-semibold mb-3">Kategorilere göre ciro</h2>
+              {% for name, amount, share in report.categories %}
+                <div class="mb-2">
+                  <div class="d-flex justify-content-between small">
+                    <span>{{ name }}</span><span class="fw-semibold">{{ amount|money }}</span>
+                  </div>
+                  <div class="progress" role="progressbar" aria-label="{{ name }} payı" aria-valuenow="{{ share }}"
+                       aria-valuemin="0" aria-valuemax="100" style="height: 6px">
+                    <div class="progress-bar bg-farm" style="width: {{ share }}%"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div></div>
+          </div>
+        {% endif %}
+      </div>
+
+      {% if report.is_admin and report.producers %}
+        <div class="card border-0 shadow-sm mb-4"><div class="card-body">
+          <h2 class="h6 fw-semibold mb-3">En çok satan üreticiler</h2>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle table-report mb-0">
+              <thead class="table-light"><tr>
+                <th>Üretici</th><th class="text-end">Sipariş</th><th class="text-end">Ciro</th><th class="text-end">Pay</th>
+              </tr></thead>
+              <tbody>
+                {% for farm, count, amount, share in report.producers %}
+                  <tr><td>{{ farm }}</td><td class="text-end">{{ count }}</td>
+                      <td class="text-end fw-semibold">{{ amount|money }}</td><td class="text-end text-muted">{{ pct(share) }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div></div>
+      {% endif %}
+
+      {% set shown = report.orders[:50] %}
+      <div class="card border-0 shadow-sm"><div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 fw-semibold mb-0">Siparişler <span class="text-muted fw-normal">({{ report.orders|length }})</span></h2>
+          {% if report.orders|length > shown|length %}
+            <span class="small text-muted">Son {{ shown|length }} sipariş gösteriliyor; tamamı CSV dosyasında.</span>
+          {% endif %}
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle table-report mb-0">
+            <thead class="table-light"><tr>
+              <th>No</th><th>Tarih</th><th>Durum</th><th>Müşteri</th>{% if report.is_admin %}<th>Üretici</th>{% endif %}
+              <th class="text-end">Kalem</th><th class="text-end">Tutar</th>
+            </tr></thead>
+            <tbody>
+              {% for line in shown %}
+                <tr>
+                  <td>#{{ line.order_id }}</td>
+                  <td>{{ line.created_local.strftime('%d.%m.%Y %H:%M') }}</td>
+                  <td>{{ line.status_label }}</td>
+                  <td>{{ line.customer_name }}</td>
+                  {% if report.is_admin %}<td class="text-muted">{{ line.farm_name }}</td>{% endif %}
+                  <td class="text-end">{{ line.item_count }}</td>
+                  <td class="text-end fw-semibold">{{ line.amount|money }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    {% endif %}
+    <p class="small text-muted mt-3">
+      Oluşturulma: {{ report.generated_at.strftime('%d.%m.%Y %H:%M') }} · Ciroya yalnızca ödenmiş, kargodaki ve
+      teslim edilmiş siparişler dahildir; ödeme bekleyen ve iptal edilen siparişler ayrı gösterilir.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

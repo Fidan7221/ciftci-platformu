@@ -1,24 +1,20 @@
-"""Pazar vitrini (Hafta 7): herkese açık ilan listesi ve ilan detayı."""
+"""Pazar vitrini (Hafta 7): herkese açık ilan listesi ve ilan detayı. Filtreleme Hafta 12."""
 from flask import Blueprint, abort, render_template, request
 
 from app.forms.cart_forms import AddToCartForm
-from app.services import category_service, listing_service, prediction_service, price_service
+from app.services import category_service, listing_service, prediction_service, price_service, search_service
 
 market_bp = Blueprint("market", __name__, url_prefix="/pazar")
 
 
 @market_bp.route("/")
 def index():
-    page = request.args.get("sayfa", 1, type=int)
-    search = request.args.get("q", "")
-    category_id = request.args.get("kategori", 0, type=int) or None
-
+    """Hafta 12: çoklu filtre + sıralama + Türkçe duyarsız arama. Tüm seçimler URL'de durur;
+    böylece sonuç sayfası paylaşılabilir, yer imine eklenebilir ve geri tuşu doğru çalışır."""
     return render_template(
         "listings/index.html",
-        pagination=listing_service.list_market(search, category_id, page),
-        search=search,
-        category_id=category_id,
         category_tree=category_service.category_tree(),
+        **search_service.market_page(request.args),
     )
 
 

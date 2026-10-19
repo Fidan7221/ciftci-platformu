@@ -135,15 +135,17 @@ def test_every_page_opens_for_each_role(client, app):
     product = Product.query.filter_by(name="Salkım Domates").one()
     listing = Listing.query.filter_by(product_id=product.id).first()
 
-    public = ["/", "/pazar/", f"/pazar/ilan/{listing.id}", "/fiyatlar/", "/auth/login", "/auth/register"]
+    public = ["/", "/pazar/", f"/pazar/ilan/{listing.id}", "/fiyatlar/", "/auth/login", "/auth/register",
+              "/pazar/?q=bal&il=Bingöl&organik=1&sirala=fiyat_azalan"]  # Hafta 12: filtreli pazar
     pages = {
         "ciftci@demo.com": ["/panel", "/uretici/panel", "/uretici/profil", "/uretici/urunler",
                             "/uretici/urunler/yeni", f"/uretici/urunler/{product.id}/duzenle",
                             "/uretici/ilanlar", "/uretici/ilanlar/yeni",
-                            f"/uretici/ilanlar/{listing.id}/duzenle", "/uretici/siparisler", "/hesabim"],
+                            f"/uretici/ilanlar/{listing.id}/duzenle", "/uretici/siparisler", "/hesabim",
+                            "/raporlar/", "/raporlar/?donem=bu_yil", "/uretici/ilanlar?q=domates&sirala=fiyat_artan"],
         "musteri@demo.com": ["/panel", "/musteri/panel", "/sepet/", "/siparisler/", "/hesabim"],
         "admin@demo.com": ["/panel", "/yonetici/panel", "/yonetici/kategoriler",
-                           "/yonetici/kategoriler/yeni", "/yonetici/siparisler", "/hesabim"],
+                           "/yonetici/kategoriler/yeni", "/yonetici/siparisler", "/hesabim", "/raporlar/"],
     }
 
     for url in public:
@@ -202,6 +204,15 @@ def test_seed_demo_is_repeatable_and_usable(client, app):
 
     assert "Salkım Domates" in text(client.get("/pazar/"))
     assert "Müşteri Paneli" in text(login(client, "musteri@demo.com", DEMO_PASSWORD))
+
+    # Hafta 12: demo siparişleri bir kez eklenir; raporlar boş görünmez
+    orders = Order.query.count()
+    assert orders > 10
+    seed_demo(app)
+    assert Order.query.count() == orders
+    login(client, "ciftci@demo.com", DEMO_PASSWORD)
+    page = text(client.get("/raporlar/?baslangic=2000-01-01"))   # en fazla 1 yıla kırpılır
+    assert "Bu dönemde sipariş yok" not in page and "en fazla 366 gün" in page
 
 
 def test_account_address_is_used_at_checkout(client, app):

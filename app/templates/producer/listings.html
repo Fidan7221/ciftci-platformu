@@ -11,11 +11,31 @@
 
   <!-- Durum sekmeleri -->
   <ul class="nav nav-pills mb-3 small">
-    <li class="nav-item"><a class="nav-link {{ 'active' if not status }}" href="{{ url_for('producer.listings') }}">Tümü</a></li>
+    <li class="nav-item"><a class="nav-link {{ 'active' if not status }}" href="{{ url_for('producer.listings', q=search or None, sirala=sort if sort != 'yeni' else None) }}">Tümü</a></li>
     {% for key, label in statuses.items() %}
-      <li class="nav-item"><a class="nav-link {{ 'active' if status == key }}" href="{{ url_for('producer.listings', durum=key) }}">{{ label }}</a></li>
+      <li class="nav-item"><a class="nav-link {{ 'active' if status == key }}" href="{{ url_for('producer.listings', durum=key, q=search or None, sirala=sort if sort != 'yeni' else None) }}">{{ label }}</a></li>
     {% endfor %}
   </ul>
+
+  <!-- Hafta 12: kendi ilanlarında arama ve sıralama -->
+  <form method="get" class="row g-2 mb-3" role="search">
+    {% if status %}<input type="hidden" name="durum" value="{{ status }}">{% endif %}
+    <div class="col-md-7">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="search" name="q" value="{{ search }}" class="form-control" maxlength="100"
+               placeholder="İlan başlığı veya ürün adı" aria-label="İlanlarımda ara">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select name="sirala" class="form-select" aria-label="Sırala" data-autosubmit>
+        {% for key, label in sort_options.items() %}
+          <option value="{{ key }}" {{ 'selected' if key == sort }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-farm" type="submit">Ara</button></div>
+  </form>
 
   {% if pagination.items %}
     <div class="card border-0 shadow-sm">
@@ -60,11 +80,15 @@
         </table>
       </div>
     </div>
-    {{ render_pagination(pagination, "producer.listings", durum=status) }}
+    {{ render_pagination(pagination, "producer.listings", durum=status, q=search or None, sirala=sort if sort != 'yeni' else None) }}
   {% else %}
     <div class="text-center text-muted py-5">
       <i class="bi bi-megaphone display-5 d-block mb-2"></i>
-      Bu görünümde ilan yok. <a href="{{ url_for('producer.new_listing') }}" class="link-farm">Yeni ilan açın</a>.
+      {% if search %}
+        “{{ search }}” ile eşleşen ilan yok. <a href="{{ url_for('producer.listings', durum=status) }}" class="link-farm">Aramayı temizle</a>
+      {% else %}
+        Bu görünümde ilan yok. <a href="{{ url_for('producer.new_listing') }}" class="link-farm">Yeni ilan açın</a>.
+      {% endif %}
     </div>
   {% endif %}
 </div>

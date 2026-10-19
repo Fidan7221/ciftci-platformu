@@ -2,74 +2,183 @@
 {% from "_macros.html" import render_pagination, product_image %}
 {% block title %}Pazar{% endblock %}
 
+{# Hafta 12: Tüm filtreler tek bir GET formunda. Seçimler adres çubuğunda durur (paylaşılabilir, yer imi).
+   JavaScript kapalıysa da çalışır: "Uygula" düğmesi formu gönderir. #}
 {% block content %}
 <div class="container py-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
-    <div>
-      <h1 class="h3 fw-bold mb-1"><i class="bi bi-shop text-farm"></i> Pazar</h1>
-      <p class="text-muted mb-0">Üreticiden doğrudan, aracısız taze ürünler.</p>
-    </div>
+  <div class="mb-3">
+    <h1 class="h3 fw-bold mb-1"><i class="bi bi-shop text-farm"></i> Pazar</h1>
+    <p class="text-muted mb-0">Üreticiden doğrudan, aracısız taze ürünler.</p>
   </div>
 
-  <form method="get" class="row g-2 mb-4" role="search">
-    <div class="col-md-6">
-      <div class="input-group">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="search" name="q" value="{{ search }}" class="form-control"
-               placeholder="Ürün, ilan veya çiftlik adı ara">
-      </div>
-    </div>
-    <div class="col-md-4">
-      <select name="kategori" class="form-select" aria-label="Kategori">
-        <option value="0">Tüm kategoriler</option>
-        {% for parent, children in category_tree %}
-          <option value="{{ parent.id }}" class="fw-semibold" {{ 'selected' if parent.id == category_id }}>{{ parent.name }} (tümü)</option>
-          {% for child in children %}
-            <option value="{{ child.id }}" {{ 'selected' if child.id == category_id }}>&nbsp;&nbsp;└ {{ child.name }}</option>
-          {% endfor %}
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2 d-grid"><button class="btn btn-farm" type="submit">Ara</button></div>
-  </form>
+  <form method="get" action="{{ url_for('market.index') }}" id="market-filter" role="search">
+    <div class="row g-4">
 
-  {% if pagination.items %}
-    <div class="row g-3">
-      {% for listing in pagination.items %}
-        {% set product = listing.product %}
-        <div class="col-sm-6 col-lg-4 col-xl-3">
-          <a href="{{ url_for('market.detail', listing_id=listing.id) }}" class="card product-card h-100 border-0 shadow-sm text-reset text-decoration-none">
-            {{ product_image(product, "product-thumb card-img-top") }}
-            <div class="card-body d-flex flex-column">
-              <div class="d-flex justify-content-between gap-2">
-                <h2 class="h6 fw-semibold mb-1">{{ listing.title }}</h2>
-                {% if product.is_organic %}<span class="badge text-bg-success align-self-start">Organik</span>{% endif %}
+      {# --- Sol: filtre paneli (mobilde katlanır) --- #}
+      <aside class="col-lg-3">
+        <button class="btn btn-outline-secondary w-100 d-lg-none mb-2" type="button"
+                data-bs-toggle="collapse" data-bs-target="#filter-panel" aria-expanded="false" aria-controls="filter-panel">
+          <i class="bi bi-funnel"></i> Filtreler
+          {% if filters.active_count %}<span class="badge text-bg-success ms-1">{{ filters.active_count }}</span>{% endif %}
+        </button>
+
+        <div class="collapse d-lg-block" id="filter-panel">
+          <div class="card border-0 shadow-sm filter-panel">
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="f-kategori" class="form-label fw-semibold small">Kategori</label>
+                <select name="kategori" id="f-kategori" class="form-select form-select-sm">
+                  <option value="">Tüm kategoriler</option>
+                  {% for parent, children in category_tree %}
+                    <option value="{{ parent.id }}" class="fw-semibold" {{ 'selected' if parent.id == filters.category_id }}>{{ parent.name }} (tümü)</option>
+                    {% for child in children %}
+                      <option value="{{ child.id }}" {{ 'selected' if child.id == filters.category_id }}>&nbsp;&nbsp;└ {{ child.name }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                </select>
               </div>
-              <div class="small text-muted mb-2">
-                <i class="bi bi-tree"></i> {{ product.producer.farm_name }} · {{ product.producer.region }}
+
+              <div class="mb-3">
+                <label for="f-il" class="form-label fw-semibold small">Konum</label>
+                <select name="il" id="f-il" class="form-select form-select-sm mb-2" data-region-city>
+                  <option value="">Tüm iller</option>
+                  {% for city, districts in region_options %}
+                    <option value="{{ city }}" {{ 'selected' if city|fold == filters.il|fold }}>{{ city }}</option>
+                  {% endfor %}
+                </select>
+                <select name="ilce" id="f-ilce" class="form-select form-select-sm" aria-label="İlçe" data-region-district>
+                  <option value="">Tüm ilçeler</option>
+                  {% for city, districts in region_options %}
+                    <optgroup label="{{ city }}" data-city="{{ city }}">
+                      {% for district in districts %}
+                        <option value="{{ district }}" {{ 'selected' if city|fold == filters.il|fold and district|fold == filters.ilce|fold }}>{{ district }}</option>
+                      {% endfor %}
+                    </optgroup>
+                  {% endfor %}
+                </select>
               </div>
-              <div class="mt-auto d-flex justify-content-between align-items-end">
-                <div>
-                  <span class="fs-5 fw-bold text-farm">{{ listing.price|money }}</span>
-                  <span class="small text-muted">/ {{ product.unit }}</span>
+
+              <fieldset class="mb-3">
+                <legend class="form-label fw-semibold small mb-2">Birim fiyat (₺)</legend>
+                {% set low, high = price_hint %}
+                <div class="input-group input-group-sm">
+                  <input type="text" inputmode="decimal" name="min_fiyat" class="form-control" aria-label="En düşük fiyat"
+                         value="{{ filters.min_price|qty if filters.min_price is not none }}"
+                         placeholder="{{ 'En az ' ~ (low|qty) if low is not none else 'En az' }}">
+                  <span class="input-group-text">–</span>
+                  <input type="text" inputmode="decimal" name="max_fiyat" class="form-control" aria-label="En yüksek fiyat"
+                         value="{{ filters.max_price|qty if filters.max_price is not none }}"
+                         placeholder="{{ 'En çok ' ~ (high|qty) if high is not none else 'En çok' }}">
                 </div>
-                <span class="small text-muted">Stok: {{ listing.stock_quantity|qty }}</span>
+              </fieldset>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="f-organik" name="organik" value="1" {{ 'checked' if filters.organic }}>
+                <label class="form-check-label small" for="f-organik">Yalnızca organik</label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="f-dogrulanmis" name="dogrulanmis" value="1" {{ 'checked' if filters.verified }}>
+                <label class="form-check-label small" for="f-dogrulanmis">
+                  Doğrulanmış (sertifikalı) üretici <i class="bi bi-patch-check-fill text-farm"></i>
+                </label>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button class="btn btn-farm btn-sm" type="submit"><i class="bi bi-funnel"></i> Uygula</button>
+                {% if filters.is_filtered %}
+                  <a class="btn btn-link btn-sm link-farm" href="{{ url_for('market.index') }}">Filtreleri temizle</a>
+                {% endif %}
               </div>
             </div>
-          </a>
+          </div>
         </div>
-      {% endfor %}
+      </aside>
+
+      {# --- Sağ: arama, sıralama, sonuçlar --- #}
+      <section class="col-lg-9">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="search" name="q" value="{{ filters.q }}" class="form-control" maxlength="100"
+                 placeholder="Ürün, ilan, çiftlik veya bölge ara (ör. cilek, organik bal, Genç)" aria-label="Ara">
+          <button class="btn btn-farm" type="submit">Ara</button>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div class="small text-muted" aria-live="polite">
+            <strong class="text-body">{{ pagination.total }}</strong> ilan bulundu
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label for="f-sirala" class="small text-muted text-nowrap">Sırala</label>
+            <select name="sirala" id="f-sirala" class="form-select form-select-sm" data-autosubmit>
+              {% for key, label in sort_options.items() %}
+                <option value="{{ key }}" {{ 'selected' if key == filters.sort }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        {% for note in filters.notes %}
+          <div class="alert alert-info py-2 small"><i class="bi bi-info-circle"></i> {{ note }}</div>
+        {% endfor %}
+
+        {% if chips %}
+          <div class="d-flex flex-wrap gap-2 mb-3" aria-label="Seçili filtreler">
+            {% for label, args in chips %}
+              <a class="badge rounded-pill filter-chip text-decoration-none" href="{{ url_for('market.index', **args) }}"
+                 title="Bu filtreyi kaldır">{{ label }} <i class="bi bi-x"></i></a>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if pagination.items %}
+          <div class="row g-3">
+            {% for listing in pagination.items %}
+              {% set product = listing.product %}
+              {% set producer = product.producer %}
+              <div class="col-sm-6 col-xl-4">
+                <a href="{{ url_for('market.detail', listing_id=listing.id) }}" class="card product-card h-100 border-0 shadow-sm text-reset text-decoration-none">
+                  {{ product_image(product, "product-thumb card-img-top") }}
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between gap-2">
+                      <h2 class="h6 fw-semibold mb-1">{{ listing.title }}</h2>
+                      {% if product.is_organic %}<span class="badge text-bg-success align-self-start">Organik</span>{% endif %}
+                    </div>
+                    <div class="small text-muted mb-1">
+                      <i class="bi bi-tree"></i> {{ producer.farm_name }}
+                      {% if producer.is_verified %}<i class="bi bi-patch-check-fill text-farm" title="Doğrulanmış üretici"></i>{% endif %}
+                      · {{ producer.region }}
+                    </div>
+                    {% if producer.review_count %}
+                      <div class="small mb-2">
+                        <i class="bi bi-star-fill text-warning"></i> {{ '%.1f'|format(producer.reputation_score) }}
+                        <span class="text-muted">({{ producer.review_count }} değerlendirme)</span>
+                      </div>
+                    {% endif %}
+                    <div class="mt-auto d-flex justify-content-between align-items-end">
+                      <div>
+                        <span class="fs-5 fw-bold text-farm">{{ listing.price|money }}</span>
+                        <span class="small text-muted">/ {{ product.unit }}</span>
+                      </div>
+                      <span class="small text-muted">Stok: {{ listing.stock_quantity|qty }}</span>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+          {{ render_pagination(pagination, "market.index", **filters.to_args()) }}
+        {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-basket display-5 d-block mb-2"></i>
+            {% if filters.is_filtered %}
+              Aramanıza uyan ilan bulunamadı. <a href="{{ url_for('market.index') }}" class="link-farm">Tüm ilanlar</a>
+            {% else %}
+              Şu anda satışta ilan yok. Yakında taze ürünler burada olacak.
+            {% endif %}
+          </div>
+        {% endif %}
+      </section>
     </div>
-    {{ render_pagination(pagination, "market.index", q=search, kategori=category_id or 0) }}
-  {% else %}
-    <div class="text-center text-muted py-5">
-      <i class="bi bi-basket display-5 d-block mb-2"></i>
-      {% if search or category_id %}
-        Aramanıza uyan ilan bulunamadı. <a href="{{ url_for('market.index') }}" class="link-farm">Tüm ilanlar</a>
-      {% else %}
-        Şu anda satışta ilan yok. Yakında taze ürünler burada olacak.
-      {% endif %}
-    </div>
-  {% endif %}
+  </form>
 </div>
 {% endblock %}

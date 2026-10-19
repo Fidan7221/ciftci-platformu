@@ -35,6 +35,8 @@ class Order(BaseModel):
     __table_args__ = (
         # Hafta 11: "Siparişlerim" sayfası müşteri id'sine göre süzer, tarihe göre sıralar
         db.Index("ix_orders_customer_created_at", "customer_id", "created_at"),
+        # Hafta 12: Raporlar tarih aralığıyla süzer (created_at >= ? AND created_at < ?)
+        db.Index("ix_orders_created_at", "created_at"),
     )
 
     customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)

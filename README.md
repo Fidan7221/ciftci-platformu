@@ -3,7 +3,7 @@
 Bingöl Üniversitesi Bilgisayar Programcılığı dönem projesi.
 Çiftçilerin ürünlerini aracısız satabildiği, müşterilerin doğrudan üreticiden alışveriş yaptığı bir pazar yeri.
 
-**Sürüm:** `v0.11.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5, scikit-learn, Chart.js
+**Sürüm:** `v0.12.0` · **Teknoloji:** Python 3.11+, Flask 3, SQLAlchemy, SQLite, Jinja2, Bootstrap 5, scikit-learn, Chart.js, ReportLab
 
 ## Kurulum
 
@@ -13,7 +13,7 @@ venv\Scripts\Activate.ps1          # Windows  (macOS/Linux: source venv/bin/acti
 pip install -r requirements.txt
 copy .env.example .env             # macOS/Linux: cp .env.example .env  → SECRET_KEY değerini doldurun
 flask db upgrade                   # tabloları oluşturur
-flask seed-demo                    # roller, kategoriler, demo verileri, 60 günlük hal fiyatı ve AI tahminleri
+flask seed-demo                    # roller, kategoriler, demo verileri, 60 günlük hal fiyatı, AI tahminleri, 45 günlük demo siparişleri
 python run.py                      # http://127.0.0.1:5000
 ```
 
@@ -26,12 +26,13 @@ Tüm hesapların parolası: `Demo12345`
 | Üretici | `ciftci@demo.com` | Ürün, ilan, gelen sipariş yönetimi (Genç Organik Çiftliği) |
 | Üretici | `arici@demo.com` | Bal ürünleri (Solhan Bal Evi) |
 | Müşteri | `musteri@demo.com` | Pazar, sepet, sipariş |
-| Yönetici | `admin@demo.com` | Kategoriler, tüm siparişler, istatistikler |
+| Müşteri | `musteri2@demo.com` | İkinci demo müşterisi (raporlarda farklı müşteri sayısı için) |
+| Yönetici | `admin@demo.com` | Kategoriler, tüm siparişler, istatistikler, platform raporları |
 
 ## Testler
 
 ```bash
-pytest -v          # 224 test (internete çıkmaz; harici API'ler taklit edilir)
+pytest -v          # 320 test (internete çıkmaz; harici API'ler taklit edilir)
 ```
 
 | Dosya | Kapsam |
@@ -44,6 +45,8 @@ pytest -v          # 224 test (internete çıkmaz; harici API'ler taklit edilir)
 | `test_integrations.py` | Harici API katmanı: zaman aşımı, yeniden deneme, 429, hız sınırı, imza, idempotency (mock) |
 | `test_payments.py`, `test_prices.py` | Ödeme akışı, iade, ödenmeyen sipariş iptali; fiyat senkronu ve karşılaştırma |
 | `test_ai.py` | Tahmin algoritması (bilinen serilerle), öneri kuralları, tahmin kaydı, panellerdeki kartlar |
+| `test_search.py` | Türkçe duyarsız arama, il/ilçe, fiyat aralığı, organik, doğrulanmış üretici, sıralamalar, sayfalama |
+| `test_reports.py` | Dönem seçimi, ciro hesabı, saat dilimi sınırı, rol/IDOR kapsamı, CSV (BOM, formül enjeksiyonu), PDF |
 | `test_security.py` | Güvenlik başlıkları/CSP, XSS, SQL injection, CSRF, IDOR (404), rol ihlali (403), toplu atama, brute force ve hız sınırları, N+1 sorgu sayısı, indeksler |
 
 ## Mimari
@@ -58,11 +61,12 @@ app/
 ├── models/         # 14 tablo (SQLAlchemy)
 ├── ai/             # Yapay zekâ: trend_model (tahmin), sell_advisor (öneri) — Flask'tan bağımsız (Hafta 10)
 ├── integrations/   # Harici API'ler: http_client, price_api, payment_gateway (Hafta 9)
+├── reports/        # Rapor dönemi, hesaplama, CSV ve PDF üretimi — veritabanından bağımsız (Hafta 12)
 ├── repositories/   # Tüm sorgular; atomik stok güncellemeleri
-├── services/       # İş kuralları (auth, producer, category, listing, cart, order, payment, price, prediction)
-├── routes/         # Blueprint'ler: main, auth, producer, admin, market, cart, orders, payments, prices
+├── services/       # İş kuralları (auth, producer, category, listing, cart, order, payment, price, prediction, search, report)
+├── routes/         # Blueprint'ler: main, auth, producer, admin, market, cart, orders, payments, prices, reports
 ├── forms/          # Flask-WTF formları (CSRF + doğrulama)
-├── utils/          # Dekoratörler (@role_required), görsel yükleme, biçimlendirme
+├── utils/          # Dekoratörler (@role_required), görsel yükleme, biçimlendirme, Türkçe arama, pazar filtresi
 ├── templates/      # Jinja2 + Bootstrap 5
 └── static/
 scripts/            # seed_data.py (roller, kategoriler), demo_data.py (vize demosu)
@@ -75,7 +79,7 @@ docs/               # Vize raporu, AI kullanım günlüğü, sözlü sınav haz�
 | Komut | Açıklama |
 |---|---|
 | `flask seed-db` | Yalnızca rolleri ve kategorileri ekler |
-| `flask seed-demo` | Demo hesapları, ürünleri ve ilanları ekler (tekrar çalıştırılabilir) |
+| `flask seed-demo` | Demo hesapları, ürünleri, ilanları ve siparişleri ekler (tekrar çalıştırılabilir) |
 | `flask create-admin` | Yeni yönetici hesabı açar |
 | `flask fetch-prices --days 30` | Hal fiyatlarını sağlayıcıdan çeker (geçmiş günler dahil) |
 | `flask predict-prices` | Satıştaki tüm ürünler için 7 günlük AI fiyat tahmini üretir |
@@ -116,5 +120,24 @@ Hafta 11 yeni indeksler eklediği için bir kez migration çalıştırın:
 
 ```bash
 flask db migrate -m "hafta 11 indeksler"
+flask db upgrade
+```
+
+## Arama, raporlama ve dışa aktarma (Hafta 12)
+
+- **Pazar filtreleri:** kategori, il/ilçe, fiyat aralığı, organik, doğrulanmış üretici; 6 sıralama seçeneği.
+  Arama Türkçe karakter ve büyük/küçük harf duyarsızdır (`cilek` → "Çilek") ve ilan, ürün, çiftlik, bölge,
+  kategori ve açıklamada arar. Tüm seçimler adres çubuğunda durur (paylaşılabilir bağlantı).
+- **Raporlar** (`/raporlar/`): üretici kendi satışlarını, yönetici tüm platformu (veya tek bir üreticiyi) görür.
+  Tarih aralıklı ciro, sipariş sayısı, ortalama sipariş, iptal oranı, günlük/aylık grafik, en çok satan ürünler,
+  kategori ve üretici kırılımı.
+- **Dışa aktarma:** CSV (Türkçe Excel uyumlu) ve PDF (Türkçe yazı tipi gömülü).
+- Ayrıntılar: [`docs/ARAMA_VE_RAPORLAMA.md`](docs/ARAMA_VE_RAPORLAMA.md)
+
+Hafta 12 yeni bir paket (`reportlab`) ve bir indeks (`orders.created_at`) ekler:
+
+```bash
+pip install -r requirements.txt
+flask db migrate -m "hafta 12 rapor indeksi"
 flask db upgrade
 ```

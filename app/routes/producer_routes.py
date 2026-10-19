@@ -190,15 +190,26 @@ def _listing_form_kwargs(form):
     )
 
 
+PRODUCER_LISTING_SORTS = {"yeni": "En yeni", "fiyat_artan": "Fiyat (artan)",
+                          "fiyat_azalan": "Fiyat (azalan)", "stok": "Kalan miktar (az olan önce)"}
+
+
 @producer_bp.route("/ilanlar")
 @role_required(RoleName.PRODUCER)
 def listings():
     page = request.args.get("sayfa", 1, type=int)
     status = request.args.get("durum") or None
+    search = " ".join(request.args.get("q", "").split())[:100]
+    sort = request.args.get("sirala", "yeni")
+    if sort not in PRODUCER_LISTING_SORTS:
+        sort = "yeni"
     return render_template(
         "producer/listings.html",
-        pagination=listing_service.list_producer_listings(_profile(), status, page),
+        pagination=listing_service.list_producer_listings(_profile(), status, page, search, sort),
         status=status,
+        search=search,
+        sort=sort,
+        sort_options=PRODUCER_LISTING_SORTS,
         statuses=ListingStatus.LABELS,
         badges=ListingStatus.BADGES,
         toggle_form=ToggleForm(),
